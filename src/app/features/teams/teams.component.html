@@ -1,0 +1,77 @@
+<mat-card class="page" dir="rtl">
+  <div class="page-header">
+    <div>
+      <h2>إدارة الفرق</h2>
+      <p>إنشاء الفرق وتعديلها وحذفها.</p>
+    </div>
+
+    <div class="header-actions">
+      <mat-form-field appearance="outline" class="search">
+        <mat-icon matPrefix>search</mat-icon>
+        <input matInput [formControl]="filterForm.controls.search" placeholder="بحث باسم الفريق" />
+      </mat-form-field>
+
+      <button mat-flat-button color="primary" type="button" (click)="openCreateTeam()">
+        <mat-icon>groups</mat-icon>
+        فريق جديد
+      </button>
+    </div>
+  </div>
+
+  <mat-card class="editor" *ngIf="showForm">
+    <div class="editor-title">{{ isEditMode ? 'تعديل الفريق' : 'إضافة فريق جديد' }}</div>
+
+    <form [formGroup]="teamForm" (ngSubmit)="submitTeam()">
+      <div class="form-grid">
+        <mat-form-field appearance="outline">
+          <mat-label>اسم الفريق</mat-label>
+          <input matInput formControlName="teamName" />
+          <mat-error *ngIf="teamForm.controls.teamName.hasError('required')">اسم الفريق مطلوب</mat-error>
+        </mat-form-field>
+      </div>
+
+      <div class="buttons">
+        <button mat-button type="button" (click)="closeForm()">إلغاء</button>
+        <button mat-flat-button color="primary" type="submit" [disabled]="submitting">
+          {{ submitting ? 'جاري الحفظ...' : (isEditMode ? 'حفظ التعديل' : 'إنشاء الفريق') }}
+        </button>
+      </div>
+    </form>
+  </mat-card>
+
+  <div class="table-wrap mat-elevation-z2" *ngIf="!loading; else loadingBlock">
+    <table mat-table [dataSource]="dataSource" matSort>
+      <ng-container matColumnDef="teamName">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>اسم الفريق</th>
+        <td mat-cell *matCellDef="let team">
+          <span class="role-badge">{{ team.teamName }}</span>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="actions">
+        <th mat-header-cell *matHeaderCellDef>إجراءات</th>
+        <td mat-cell *matCellDef="let team" class="actions-cell">
+          <button mat-icon-button color="primary" matTooltip="تعديل" type="button" (click)="openEditTeam(team)">
+            <mat-icon>edit</mat-icon>
+          </button>
+          <button mat-icon-button color="warn" matTooltip="حذف" type="button" (click)="deleteTeam(team.teamId)">
+            <mat-icon>delete</mat-icon>
+          </button>
+        </td>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+      <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
+
+      <tr class="empty" *ngIf="dataSource.data.length === 0">
+        <td [attr.colspan]="displayedColumns.length">لا توجد فرق حالياً</td>
+      </tr>
+    </table>
+  </div>
+
+  <ng-template #loadingBlock>
+    <div class="loading">جاري تحميل بيانات الفرق...</div>
+  </ng-template>
+
+  <mat-paginator [pageSizeOptions]="[5, 10, 20, 50]" [pageSize]="10" showFirstLastButtons></mat-paginator>
+</mat-card>

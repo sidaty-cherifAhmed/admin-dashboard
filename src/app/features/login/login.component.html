@@ -1,0 +1,29 @@
+<div class="login-page" dir="rtl">
+  <mat-card class="login-card">
+    <div class="head">
+      <div class="logo">AD</div>
+      <div>
+        <h1>تسجيل الدخول</h1>
+        <p>أدخل بياناتك للوصول إلى لوحة الإدارة</p>
+      </div>
+    </div>
+
+    <form [formGroup]="form" (ngSubmit)="submit()" class="login-form">
+      <mat-form-field appearance="outline">
+        <mat-label>البريد الإلكتروني</mat-label>
+        <input matInput type="email" formControlName="email" />
+        <mat-icon matSuffix>mail</mat-icon>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>كلمة المرور</mat-label>
+        <input matInput type="password" formControlName="password" />
+        <mat-icon matSuffix>lock</mat-icon>
+      </mat-form-field>
+
+      <button mat-flat-button type="submit" color="primary" [disabled]="submitting">
+        {{ submitting ? 'جاري تسجيل الدخول...' : 'تسجيل الدخول' }}
+      </button>
+    </form>
+  </mat-card>
+</div>

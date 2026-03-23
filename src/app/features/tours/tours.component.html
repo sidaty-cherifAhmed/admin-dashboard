@@ -1,0 +1,299 @@
+<mat-card class="page" dir="rtl">
+  <div class="page-header">
+    <div>
+      <h2>إدارة الجولات</h2>
+      <p>إنشاء الجولة.</p>
+    </div>
+
+    <div class="header-actions">
+      <mat-form-field appearance="outline" class="search">
+        <mat-icon matPrefix>search</mat-icon>
+        <input matInput [formControl]="filterForm.controls.search" placeholder="بحث بالتاريخ أو المركبة أو الفريق أو المنتج أو الحالة" />
+      </mat-form-field>
+
+      <button mat-flat-button color="primary" type="button" (click)="openCreateTour()">
+        <mat-icon>route</mat-icon>
+        جولة جديدة
+      </button>
+    </div>
+  </div>
+
+  <mat-card class="editor" *ngIf="showForm">
+    <div class="editor-title">{{ isEditMode ? 'تعديل الجولة والعناصر ونقاط البيع' : 'إضافة جولة جديدة مع العناصر ونقاط البيع' }}</div>
+
+    <form [formGroup]="tourForm" (ngSubmit)="submitTour()">
+      <div class="form-grid">
+        <mat-form-field appearance="outline">
+          <mat-label>تاريخ الجولة</mat-label>
+          <input matInput type="date" formControlName="tourDate" />
+          <mat-error *ngIf="tourForm.controls.tourDate.hasError('required')">التاريخ مطلوب</mat-error>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>المركبة</mat-label>
+          <mat-select formControlName="vehicleId">
+            <mat-option [value]="0" disabled>اختر المركبة</mat-option>
+            <mat-option *ngFor="let vehicle of vehicles" [value]="vehicle.vehicleId ?? vehicle.id">
+              {{ vehicle.vehicleCode }} 
+            </mat-option>
+          </mat-select>
+          <mat-error *ngIf="tourForm.controls.vehicleId.hasError('required') || tourForm.controls.vehicleId.hasError('min')">
+            المركبة مطلوبة
+          </mat-error>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>الفريق</mat-label>
+          <mat-select formControlName="teamId">
+            <mat-option [value]="0" disabled>اختر الفريق</mat-option>
+            <mat-option *ngFor="let team of teams" [value]="team.teamId">
+              {{ team.teamName }}
+            </mat-option>
+          </mat-select>
+          <mat-error *ngIf="tourForm.controls.teamId.hasError('required') || tourForm.controls.teamId.hasError('min')">
+            الفريق مطلوب
+          </mat-error>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>الحالة</mat-label>
+          <mat-select formControlName="status">
+            <mat-option *ngFor="let option of statusOptions" [value]="option.value">
+              {{ option.label }}
+            </mat-option>
+          </mat-select>
+          <mat-error *ngIf="tourForm.controls.status.hasError('required')">الحالة مطلوبة</mat-error>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>نقاط البيع</mat-label>
+          <mat-select formControlName="salesPointIds" multiple>
+            <mat-option *ngFor="let point of salesPoints" [value]="point.salesPointId ?? point.id">
+              {{ point.name }} - {{ point.zone }}
+            </mat-option>
+          </mat-select>
+          <mat-hint>يمكن اختيار أكثر من نقطة بيع</mat-hint>
+        </mat-form-field>
+      </div>
+
+      <div class="items-header">
+        <div>
+          <div class="items-title">عناصر الجولة</div>
+          <p>أضف المنتجات والكميات المحملة قبل حفظ الجولة.</p>
+        </div>
+
+        <button mat-stroked-button type="button" (click)="addTourItem()">
+          <mat-icon>add</mat-icon>
+          إضافة عنصر
+        </button>
+      </div>
+
+      <div class="items-list" formArrayName="items">
+        <div
+          class="item-row"
+          *ngFor="let itemGroup of tourItemsControls; let i = index; trackBy: trackByIndex"
+          [formGroupName]="i"
+        >
+          <div class="item-grid">
+            <mat-form-field appearance="outline">
+              <mat-label>المنتج</mat-label>
+              <mat-select formControlName="productId">
+                <mat-option [value]="0" disabled>اختر المنتج</mat-option>
+                <mat-option *ngFor="let product of products" [value]="product.productId ?? product.id">
+                  {{ product.productName }} ({{ product.productCode }})
+                </mat-option>
+              </mat-select>
+              <mat-error
+                *ngIf="
+                  itemGroup.controls.productId.hasError('required') || itemGroup.controls.productId.hasError('min')
+                "
+              >
+                المنتج مطلوب
+              </mat-error>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>الكمية المحملة</mat-label>
+              <input matInput type="number" min="1" step="1" formControlName="loadedQt" />
+              <mat-error *ngIf="itemGroup.controls.loadedQt.hasError('required')">الكمية مطلوبة</mat-error>
+              <mat-error *ngIf="itemGroup.controls.loadedQt.hasError('min')">يجب أن تكون الكمية 1 أو أكثر</mat-error>
+            </mat-form-field>
+          </div>
+
+          <button
+            mat-icon-button
+            color="warn"
+            type="button"
+            matTooltip="حذف العنصر"
+            (click)="removeTourItem(i)"
+          >
+            <mat-icon>delete</mat-icon>
+          </button>
+        </div>
+      </div>
+
+      <div class="form-error" *ngIf="duplicateProducts">لا يمكن تكرار نفس المنتج أكثر من مرة داخل الجولة نفسها.</div>
+
+      <div class="buttons">
+        <button mat-button type="button" (click)="closeForm()">إلغاء</button>
+        <button mat-flat-button color="primary" type="submit" [disabled]="submitting || duplicateProducts">
+          {{ submitting ? 'جاري الحفظ...' : (isEditMode ? 'حفظ التعديل' : 'إنشاء الجولة والعناصر') }}
+        </button>
+      </div>
+    </form>
+  </mat-card>
+
+  <div class="table-wrap mat-elevation-z2" *ngIf="!loading; else loadingBlock">
+    <table mat-table [dataSource]="dataSource" matSort>
+      <ng-container matColumnDef="tourId">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>رقم الجولة</th>
+        <td mat-cell *matCellDef="let tour" class="mono">{{ tour.tourId ?? tour.id }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="car">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>المركبة</th>
+        <td mat-cell *matCellDef="let tour">{{ vehicleLabel(tour.vehicleId) }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="team">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>الفريق</th>
+        <td mat-cell *matCellDef="let tour">{{ teamLabel(tour.teamId) }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="tourDate">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>التاريخ</th>
+        <td mat-cell *matCellDef="let tour" class="mono">{{ tour.tourDate }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="status">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>الحالة</th>
+        <td mat-cell *matCellDef="let tour">{{ statusLabel(tour.status) }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="salesPoints">
+        <th mat-header-cell *matHeaderCellDef>نقاط البيع</th>
+        <td mat-cell *matCellDef="let tour">
+          <div class="sales-points-cell">
+            <button mat-stroked-button type="button" color="accent" (click)="openSalesPointsDialog(tour)">
+              <mat-icon>store</mat-icon>
+              عرض نقاط البيع
+            </button>
+          </div>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="details">
+        <th mat-header-cell *matHeaderCellDef>الإجراءات</th>
+        <td mat-cell *matCellDef="let tour">
+          <div class="row-actions">
+            <button mat-stroked-button type="button" (click)="toggleDetails(tour)">
+              <mat-icon>{{ hasOpenDetails(tour) ? 'visibility_off' : 'visibility' }}</mat-icon>
+              {{ hasOpenDetails(tour) ? 'إخفاء' : 'عرض' }}
+            </button>
+
+            <button mat-stroked-button color="primary" type="button" (click)="openEditTour(tour)">
+              <mat-icon>edit</mat-icon>
+              تعديل
+            </button>
+
+            <button mat-stroked-button color="warn" type="button" [disabled]="!canDeleteTour(tour)" (click)="deleteTour(tour)">
+              <mat-icon>delete</mat-icon>
+              حذف
+            </button>
+          </div>
+        </td>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+      <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
+
+      <tr class="empty" *ngIf="dataSource.data.length === 0">
+        <td [attr.colspan]="displayedColumns.length">لا توجد جولات حالياً</td>
+      </tr>
+    </table>
+  </div>
+
+  <mat-card class="details-panel" *ngIf="selectedTour as tour">
+    <div class="details-header">
+      <div>
+        <h3>تفاصيل الجولة</h3>
+      </div>
+    </div>
+
+    <div class="detail-empty" *ngIf="tour.items.length === 0; else detailsTable">
+      لا توجد عناصر مرتبطة بهذه الجولة.
+    </div>
+
+    <ng-template #detailsTable>
+      <div class="details-table-wrap">
+        <table class="details-table">
+          <thead>
+            <tr>
+              <th>المنتج</th>
+              <th>الكمية المحملة</th>
+              <th>Note</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let item of tour.items">
+              <td>{{ productLabel(item.productId) }}</td>
+              <td>{{ item.loadedQt }}</td>
+              <td>
+                <span class="item-note" *ngIf="hasItemNote(item)">{{ item.note }}</span>
+                <span class="item-note-empty" *ngIf="hasLoadedItemNote(item) && !hasItemNote(item)">-</span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </ng-template>
+  </mat-card>
+
+  <ng-template #loadingBlock>
+    <div class="loading">جاري تحميل الجولات...</div>
+  </ng-template>
+
+  <div class="modal-backdrop" *ngIf="salesPointsDialog" (click)="closeSalesPointsDialog()">
+    <div class="modal-card" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div>
+          <h3>تفاصيل نقاط البيع</h3>
+          <p>الجولة رقم {{ salesPointsDialog.tourId }}</p>
+        </div>
+
+        <button mat-icon-button type="button" (click)="closeSalesPointsDialog()">
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
+
+      <div class="detail-empty" *ngIf="salesPointsDialog.salesPoints.length === 0; else salesPointsTable">
+        لا توجد نقاط بيع مرتبطة بهذه الجولة.
+      </div>
+
+      <ng-template #salesPointsTable>
+        <div class="details-table-wrap">
+          <table class="details-table modal-table">
+            <thead>
+              <tr>
+                <th>الاسم</th>
+                <th>العنوان</th>
+                <th>المنطقة</th>
+                <th>الحالة</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let point of salesPointsDialog.salesPoints">
+                <td>{{ point.name }}</td>
+                <td>{{ point.adresse }}</td>
+                <td>{{ point.zone }}</td>
+                <td>{{ salesPointStatusLabel(point.isActive) }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </ng-template>
+    </div>
+  </div>
+
+  <mat-paginator [pageSizeOptions]="[5, 10, 20, 50]" [pageSize]="10" showFirstLastButtons></mat-paginator>
+</mat-card>

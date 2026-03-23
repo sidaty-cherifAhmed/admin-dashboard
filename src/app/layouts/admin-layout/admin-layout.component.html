@@ -1,0 +1,83 @@
+﻿<div class="dashboard" dir="rtl">
+
+  <aside class="sidebar">
+
+    <div class="brand">
+      <div class="brand-mark">AD</div>
+      <div>
+        <div class="brand-title">لوحة الإدارة</div>
+      </div>
+    </div>
+
+    <nav class="nav-links">
+      <a routerLink="/users" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
+        <mat-icon>group</mat-icon>
+        <span>إدارة المستخدمين</span>
+      </a>
+
+      <a routerLink="/teams" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
+        <mat-icon>groups</mat-icon>
+        <span>إدارة الفرق</span>
+      </a>
+
+      <a routerLink="/team-members" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
+        <mat-icon>hub</mat-icon>
+        <span>إدارة أعضاء الفرق</span>
+      </a>
+
+      <a routerLink="/roles" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
+        <mat-icon>admin_panel_settings</mat-icon>
+        <span>إدارة الأدوار</span>
+      </a>
+
+      <a routerLink="/categories" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
+        <mat-icon>category</mat-icon>
+        <span>إدارة التصنيفات</span>
+      </a>
+
+      <a routerLink="/products" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
+        <mat-icon>inventory_2</mat-icon>
+        <span>إدارة المنتجات</span>
+      </a>
+
+      <a routerLink="/stocks" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
+        <mat-icon>warehouse</mat-icon>
+        <span>إدارة المخزون</span>
+      </a>
+
+      <a routerLink="/salespoints" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
+        <mat-icon>point_of_sale</mat-icon>
+        <span>إدارة نقاط البيع</span>
+      </a>
+
+      <a routerLink="/vehicles" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
+        <mat-icon>directions_car</mat-icon>
+        <span>إدارة المركبات</span>
+      </a>
+
+      <a routerLink="/tours" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
+        <mat-icon>route</mat-icon>
+        <span>إدارة الجولات</span>
+      </a>
+      
+    </nav>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <div>
+        <h1>لوحة التحكم</h1>
+      </div>
+
+      <button mat-stroked-button type="button" class="logout-btn" (click)="logout()">
+        <mat-icon>logout</mat-icon>
+        <span>تسجيل الخروج</span>
+      </button>
+    </header>
+
+    <section class="content">
+      <router-outlet></router-outlet>
+    </section>
+  </main>
+
+</div>

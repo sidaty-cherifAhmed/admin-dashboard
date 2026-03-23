@@ -1,0 +1,144 @@
+﻿<mat-card class="page" dir="rtl">
+  <div class="page-header">
+    <div>
+      <h2>إدارة المستخدمين</h2>
+      <p>إضافة، تعديل، حذف، والبحث داخل جميع المستخدمين.</p>
+    </div>
+
+    <div class="header-actions">
+      <mat-form-field appearance="outline" class="search">
+        <mat-icon matPrefix>search</mat-icon>
+        <input matInput [formControl]="filterForm.controls.search" placeholder="بحث بالاسم، البريد، الهاتف، الدور" />
+      </mat-form-field>
+
+      <button mat-flat-button color="primary" type="button" (click)="openCreateUser()">
+        <mat-icon>person_add</mat-icon>
+        مستخدم جديد
+      </button>
+    </div>
+  </div>
+
+  <mat-card class="editor" *ngIf="showForm">
+    <div class="editor-title">{{ isEditMode ? 'تعديل مستخدم' : 'إضافة مستخدم جديد' }}</div>
+
+    <form [formGroup]="userForm" (ngSubmit)="submitUser()">
+      <div class="form-grid">
+        <mat-form-field appearance="outline">
+          <mat-label>الاسم الكامل</mat-label>
+          <input matInput formControlName="fullName" />
+          <mat-error *ngIf="userForm.controls.fullName.hasError('required')">الاسم مطلوب</mat-error>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>البريد الإلكتروني</mat-label>
+          <input matInput formControlName="email" />
+          <mat-error *ngIf="userForm.controls.email.hasError('required')">البريد مطلوب</mat-error>
+          <mat-error *ngIf="userForm.controls.email.hasError('email')">صيغة البريد غير صحيحة</mat-error>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>رقم الهاتف</mat-label>
+          <input matInput formControlName="phone" />
+          <mat-error *ngIf="userForm.controls.phone.hasError('required')">الهاتف مطلوب</mat-error>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" *ngIf="!isEditMode">
+          <mat-label>كلمة المرور</mat-label>
+          <input matInput type="password" formControlName="password" />
+          <mat-error *ngIf="userForm.controls.password.hasError('required')">كلمة المرور مطلوبة</mat-error>
+          <mat-error *ngIf="userForm.controls.password.hasError('minlength')">6 أحرف على الأقل</mat-error>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>الدور</mat-label>
+          <mat-select formControlName="roleId">
+            <mat-option [value]="null" disabled>اختر الدور</mat-option>
+            <mat-option *ngFor="let role of roles" [value]="role.roleId">{{ role.roleName }}</mat-option>
+          </mat-select>
+          <mat-error *ngIf="userForm.controls.roleId.hasError('required')">الدور مطلوب</mat-error>
+        </mat-form-field>
+      </div>
+
+      <div class="form-footer">
+        <mat-slide-toggle formControlName="isActive">حساب نشط</mat-slide-toggle>
+
+        <div class="buttons">
+          <button mat-button type="button" (click)="closeForm()">إلغاء</button>
+          <button mat-flat-button color="primary" type="submit" [disabled]="submitting">
+            {{ submitting ? 'جاري الحفظ...' : (isEditMode ? 'حفظ التعديل' : 'إنشاء المستخدم') }}
+          </button>
+        </div>
+      </div>
+    </form>
+  </mat-card>
+
+  <div class="table-wrap mat-elevation-z2" *ngIf="!loading; else loadingBlock">
+    <table mat-table [dataSource]="dataSource" matSort>
+      <ng-container matColumnDef="fullName">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>الاسم</th>
+        <td mat-cell *matCellDef="let user">
+          <div class="name-cell">
+            <div class="avatar">{{ (user.fullName || 'م').slice(0, 1) }}</div>
+            <div>
+              <div class="name">{{ user.fullName }}</div>
+              <div class="sub">{{ user.email }}</div>
+            </div>
+          </div>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="email">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>البريد</th>
+        <td mat-cell *matCellDef="let user" class="mono">{{ user.email }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="phone">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>الهاتف</th>
+        <td mat-cell *matCellDef="let user" class="mono">{{ user.phone }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="roleName">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>الدور</th>
+        <td mat-cell *matCellDef="let user">
+          <span class="role-pill">{{ user.roleName || roleNameById(user.roleId) }}</span>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="isActive">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>الحالة</th>
+        <td mat-cell *matCellDef="let user">
+          <mat-chip-set>
+            <mat-chip [class.active-chip]="user.isActive" [class.inactive-chip]="!user.isActive">
+              {{ user.isActive ? 'نشط' : 'غير نشط' }}
+            </mat-chip>
+          </mat-chip-set>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="actions">
+        <th mat-header-cell *matHeaderCellDef>إجراءات</th>
+        <td mat-cell *matCellDef="let user" class="actions-cell">
+          <button mat-icon-button color="primary" matTooltip="تعديل" type="button" (click)="openEditUser(user)">
+            <mat-icon>edit</mat-icon>
+          </button>
+          <button mat-icon-button color="warn" matTooltip="حذف" type="button" (click)="deleteUser(user.userId)">
+            <mat-icon>delete</mat-icon>
+          </button>
+        </td>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+      <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
+
+      <tr class="empty" *ngIf="dataSource.data.length === 0">
+        <td [attr.colspan]="displayedColumns.length">لا توجد بيانات حالياً</td>
+      </tr>
+    </table>
+  </div>
+
+  <ng-template #loadingBlock>
+    <div class="loading">جاري تحميل بيانات المستخدمين...</div>
+  </ng-template>
+
+  <mat-paginator [pageSizeOptions]="[5, 10, 20, 50]" [pageSize]="10" showFirstLastButtons></mat-paginator>
+</mat-card>

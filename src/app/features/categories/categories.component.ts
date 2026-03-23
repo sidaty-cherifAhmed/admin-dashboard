@@ -1,0 +1,196 @@
+import { CommonModule } from '@angular/common';
+import { Component, DestroyRef, OnInit, ViewChild, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+
+import { MatTableDataSource, MatTableModule } from '@angular/material/table';
+import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
+import { MatSort, MatSortModule } from '@angular/material/sort';
+import { MatIconModule } from '@angular/material/icon';
+import { MatButtonModule } from '@angular/material/button';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatCardModule } from '@angular/material/card';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { finalize } from 'rxjs';
+
+import { Category, CategoryPayload } from '../../core/models/category.model';
+import { CategoriesService } from '../../core/services/categories.service';
+import { debounceTime } from 'rxjs';
+
+@Component({
+  selector: 'app-categories',
+  standalone: true,
+  imports: [
+    CommonModule,
+    ReactiveFormsModule,
+    MatTableModule,
+    MatPaginatorModule,
+    MatSortModule,
+    MatIconModule,
+    MatButtonModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatTooltipModule,
+    MatCardModule,
+    MatSnackBarModule,
+  ],
+  templateUrl: './categories.component.html',
+  styleUrl: './categories.component.scss',
+})
+
+
+export class CategoriesComponent implements OnInit {
+
+  private readonly categoriesService = inject(CategoriesService);
+  private readonly fb = inject(FormBuilder);
+  private readonly snackBar = inject(MatSnackBar);
+  private readonly destroyRef = inject(DestroyRef);
+
+  displayedColumns: string[] = ['categoryName', 'actions'];
+  dataSource = new MatTableDataSource<Category>([]);
+
+  readonly filterForm = this.fb.nonNullable.group({
+    search: [''],
+  });
+
+  readonly categoryForm = this.fb.nonNullable.group({
+    categoryName: ['', [Validators.required, Validators.minLength(2)]],
+  });
+
+  loading = true;
+  submitting = false;
+  showForm = false;
+  editingCategoryId: number | null = null;
+
+  @ViewChild(MatPaginator) paginator!: MatPaginator;
+  @ViewChild(MatSort) sort!: MatSort;
+
+  ngOnInit(): void {
+
+    this.initFiltering();
+
+    queueMicrotask(() => {
+      this.loadCategories();
+    });
+
+  }
+
+  get isEditMode(): boolean {
+    return this.editingCategoryId !== null;
+  }
+
+  loadCategories(): void {
+        this.loading = true;
+        this.categoriesService
+          .getAll()
+          .pipe(finalize(() => (this.loading = false)))
+          .subscribe({
+            next: (categories) => {
+              this.dataSource.data = categories ?? [];
+              this.dataSource.paginator = this.paginator;
+              this.dataSource.sort = this.sort;
+            },
+            error: () => {
+              this.openSnack('فشل تحميل التصنيفات');
+            },
+          });
+  }
+
+  openCreateCategory(): void {
+    this.showForm = true;
+    this.editingCategoryId = null;
+    this.categoryForm.reset({
+      categoryName: '',
+    });
+  }
+
+  openEditCategory(category: Category): void {
+    this.showForm = true;
+    this.editingCategoryId = category.categoryId;
+    this.categoryForm.patchValue({
+      categoryName: category.categoryName,
+    });
+  }
+
+  closeForm(): void {
+    this.showForm = false;
+    this.editingCategoryId = null;
+  }
+
+  submitCategory(): void {
+
+    if (this.categoryForm.invalid) {
+      this.categoryForm.markAllAsTouched();
+      return;
+    }
+
+    const payload = this.categoryForm.getRawValue() as CategoryPayload;
+    this.submitting = true;
+
+    const request$ = this.isEditMode
+      ? this.categoriesService.update(this.editingCategoryId as number, payload)
+      : this.categoriesService.create(payload);
+
+    request$.pipe(finalize(() => (this.submitting = false))).subscribe({
+      next: () => {
+        this.openSnack(this.isEditMode ? 'تم تعديل التصنيف' : 'تم إنشاء التصنيف');
+        this.closeForm();
+        this.loadCategories();
+      },
+      error: () => {
+        this.openSnack(this.isEditMode ? 'فشل تعديل التصنيف' : 'فشل إنشاء التصنيف');
+      },
+    });
+
+
+
+  }
+
+  deleteCategory(id: number): void {
+
+    if (!confirm('هل أنت متأكد من حذف هذا التصنيف؟')) {
+      return;
+    }
+
+    this.categoriesService.delete(id).subscribe({
+      next: () => {
+        this.openSnack('تم حذف التصنيف');
+        this.loadCategories();
+      },
+      error: () => {
+        this.openSnack('فشل حذف التصنيف');
+      },
+    });
+  }
+
+
+  private initFiltering(): void {
+
+    this.dataSource.filterPredicate = (category, filter) => {
+      const text = filter.trim().toLowerCase();
+      return category.categoryName.toLowerCase().includes(text);
+    };
+
+
+    this.filterForm.controls.search.valueChanges
+      .pipe(debounceTime(300),takeUntilDestroyed(this.destroyRef))
+      .subscribe((value) => {
+        this.dataSource.filter = value.trim().toLowerCase();
+        this.dataSource.paginator?.firstPage();
+      });
+
+      
+
+  }
+
+
+  private openSnack(message: string): void {
+    this.snackBar.open(message, 'إغلاق', {
+      duration: 2600,
+      horizontalPosition: 'start',
+      verticalPosition: 'top',
+    });
+  }
+}
