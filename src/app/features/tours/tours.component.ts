@@ -13,10 +13,10 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatSort, MatSortModule } from '@angular/material/sort';
 import { MatTableDataSource, MatTableModule } from '@angular/material/table';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { Observable, catchError, debounceTime, finalize, forkJoin, map, of, switchMap, throwError } from 'rxjs';
+import { Observable, catchError, debounceTime, finalize, forkJoin, map, of, startWith, switchMap, tap, throwError } from 'rxjs';
 
-import { Product } from '../../core/models/product.model';
 import { SalesPoint } from '../../core/models/salespoint.model';
+import { Stock } from '../../core/models/stock.model';
 import { Team } from '../../core/models/team.model';
 import { TourItem, TourItemPayload } from '../../core/models/tour-item.model';
 import { TourStop } from '../../core/models/tour-stop.model';
@@ -24,6 +24,7 @@ import { Tour, TourPayload } from '../../core/models/tour.model';
 import { Vehicle } from '../../core/models/vehicle.model';
 import { ProductsService } from '../../core/services/products.service';
 import { SalesPointsService } from '../../core/services/salespoints.service';
+import { StocksService } from '../../core/services/stocks.service';
 import { TeamsService } from '../../core/services/teams.service';
 import { TourItemsService } from '../../core/services/tour-items.service';
 import { TourStopsService } from '../../core/services/tour-stops.service';
@@ -58,6 +59,13 @@ interface SalesPointsDialogState {
   salesPoints: SalesPoint[];
 }
 
+interface WarehouseProductOption {
+  productId: number;
+  productName: string;
+  stockId: number | null;
+  stockQuantity: number;
+}
+
 @Component({
   selector: 'app-tours',
   standalone: true,
@@ -80,13 +88,13 @@ interface SalesPointsDialogState {
   styleUrl: './tours.component.scss',
 })
 export class ToursComponent implements OnInit {
-
   private readonly toursService = inject(ToursService);
   private readonly tourItemsService = inject(TourItemsService);
   private readonly tourStopsService = inject(TourStopsService);
   private readonly vehiclesService = inject(VehiclesService);
   private readonly teamsService = inject(TeamsService);
   private readonly productsService = inject(ProductsService);
+  private readonly stocksService = inject(StocksService);
   private readonly salesPointsService = inject(SalesPointsService);
   private readonly fb = inject(FormBuilder);
   private readonly snackBar = inject(MatSnackBar);
@@ -116,8 +124,9 @@ export class ToursComponent implements OnInit {
 
   vehicles: Vehicle[] = [];
   teams: Team[] = [];
-  products: Product[] = [];
+  products: WarehouseProductOption[] = [];
   salesPoints: SalesPoint[] = [];
+  productStockQuantities: Record<number, number> = {};
   loading = true;
   submitting = false;
   showForm = false;
@@ -178,6 +187,7 @@ export class ToursComponent implements OnInit {
         productId: 0,
         loadedQt: 1,
       });
+      this.updateAllItemQuantityConstraints();
       this.updateDuplicateProductsState();
       return;
     }
@@ -218,6 +228,8 @@ export class ToursComponent implements OnInit {
   }
 
   submitTour(): void {
+    this.updateAllItemQuantityConstraints();
+
     if (this.tourForm.invalid) {
       this.tourForm.markAllAsTouched();
       return;
@@ -235,7 +247,6 @@ export class ToursComponent implements OnInit {
       teamId: Number(raw.teamId),
       status: raw.status,
     };
-    console.log(raw.tourDate);
     const salesPointIds = raw.salesPointIds.map((id) => Number(id)).filter((id) => id > 0);
     const itemsPayload: Omit<TourItemPayload, 'tourId'>[] = raw.items.map((item) => ({
       loadedQt: Number(item.loadedQt),
@@ -284,12 +295,16 @@ export class ToursComponent implements OnInit {
   }
 
   productLabel(productId: number): string {
-    const product = this.products.find((entry) => this.resolveProductId(entry) === productId);
+    const product = this.products.find((entry) => entry.productId === productId);
     if (!product) {
       return `#${productId}`;
     }
 
-    return `${product.productName} (${product.productCode})`;
+    return product.productName;
+  }
+
+  productAvailableQuantity(productId: number): number {
+    return this.productStockQuantities[productId] ?? 0;
   }
 
   salesPointsLabel(tour: TourSummary): string {
@@ -426,10 +441,13 @@ export class ToursComponent implements OnInit {
   }
 
   private createTourItemGroup(): TourItemFormGroup {
-    return this.fb.nonNullable.group({
+    const group = this.fb.nonNullable.group({
       productId: [0, [Validators.required, Validators.min(1)]],
       loadedQt: [1, [Validators.required, Validators.min(1)]],
     });
+
+    this.registerItemStockTracking(group);
+    return group;
   }
 
   private createTourWithRelations(
@@ -556,14 +574,7 @@ export class ToursComponent implements OnInit {
       },
     });
 
-    this.productsService.getAll().subscribe({
-      next: (products) => {
-        this.products = products ?? [];
-      },
-      error: () => {
-        this.openSnack('فشل تحميل المنتجات');
-      },
-    });
+    this.loadWarehouseProducts();
 
     this.salesPointsService.getAll().subscribe({
       next: (salesPoints) => {
@@ -572,6 +583,109 @@ export class ToursComponent implements OnInit {
       error: () => {
         this.openSnack('فشل تحميل نقاط البيع');
       },
+    });
+  }
+
+  private loadWarehouseProducts(): void {
+    this.stocksService.getAll()
+      .pipe(
+        switchMap((stocks) => {
+          const warehouseStocks = (stocks ?? []).filter((stock) => Number(stock.productId) > 0);
+          if (warehouseStocks.length === 0) {
+            return of([] as WarehouseProductOption[]);
+          }
+
+          const uniqueStocks = Array.from(new Map(warehouseStocks.map((stock) => [stock.productId, stock])).values());
+
+          return forkJoin(
+            uniqueStocks.map((stock) =>
+              this.productsService.getProductName(stock.productId).pipe(
+                map((productName) => this.toWarehouseProductOption(stock, productName)),
+                catchError(() => of(this.toWarehouseProductOption(stock, stock.productName ?? `#${stock.productId}`))),
+              ),
+            ),
+          );
+        }),
+      )
+      .subscribe({
+        next: (products) => {
+          this.products = products.sort((left, right) => left.productName.localeCompare(right.productName));
+          this.productStockQuantities = Object.fromEntries(
+            this.products.map((product) => [product.productId, product.stockQuantity]),
+          );
+          this.updateAllItemQuantityConstraints();
+        },
+        error: () => {
+          this.openSnack('فشل تحميل منتجات المخزن');
+        },
+      });
+  }
+
+  private toWarehouseProductOption(stock: Stock, productName: string): WarehouseProductOption {
+    return {
+      productId: stock.productId,
+      productName: productName.trim() || `#${stock.productId}`,
+      stockId: stock.stockId ?? stock.id ?? null,
+      stockQuantity: Number(stock.quantity) || 0,
+    };
+  }
+
+  private registerItemStockTracking(group: TourItemFormGroup): void {
+    group.controls.productId.valueChanges
+      .pipe(
+        startWith(group.controls.productId.value),
+        takeUntilDestroyed(this.destroyRef),
+        switchMap((productId) => this.syncProductStockQuantity(Number(productId))),
+      )
+      .subscribe((availableQuantity) => {
+        this.applyLoadedQuantityValidators(group, availableQuantity);
+      });
+
+    group.controls.loadedQt.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => {
+        this.applyLoadedQuantityValidators(group, this.productAvailableQuantity(Number(group.controls.productId.value)));
+      });
+  }
+
+  private syncProductStockQuantity(productId: number): Observable<number> {
+    if (productId <= 0) {
+      return of(0);
+    }
+
+    return this.stocksService.getQuantityByProductId(productId).pipe(
+      map((quantity) => Number(quantity) || 0),
+      tap((quantity) => {
+        this.productStockQuantities = {
+          ...this.productStockQuantities,
+          [productId]: quantity,
+        };
+
+        this.products = this.products.map((product) =>
+          product.productId === productId
+            ? {
+                ...product,
+                stockQuantity: quantity,
+              }
+            : product,
+        );
+      }),
+      catchError(() => of(this.productAvailableQuantity(productId))),
+    );
+  }
+
+  private applyLoadedQuantityValidators(group: TourItemFormGroup, availableQuantity: number): void {
+    group.controls.loadedQt.setValidators([
+      Validators.required,
+      Validators.min(1),
+      Validators.max(Math.max(availableQuantity, 0)),
+    ]);
+    group.controls.loadedQt.updateValueAndValidity({ emitEvent: false });
+  }
+
+  private updateAllItemQuantityConstraints(): void {
+    this.tourItemsControls.forEach((group) => {
+      this.applyLoadedQuantityValidators(group, this.productAvailableQuantity(Number(group.controls.productId.value)));
     });
   }
 
@@ -615,6 +729,7 @@ export class ToursComponent implements OnInit {
         },
       ],
     });
+    this.updateAllItemQuantityConstraints();
     this.updateDuplicateProductsState();
   }
 
@@ -627,13 +742,15 @@ export class ToursComponent implements OnInit {
     }
 
     items.forEach((item) => {
-      this.tourForm.controls.items.push(
-        this.fb.nonNullable.group({
-          productId: [item.productId, [Validators.required, Validators.min(1)]],
-          loadedQt: [item.loadedQt, [Validators.required, Validators.min(1)]],
-        }),
-      );
+      const group = this.createTourItemGroup();
+      group.setValue({
+        productId: item.productId,
+        loadedQt: item.loadedQt,
+      });
+      this.tourForm.controls.items.push(group);
     });
+
+    this.updateAllItemQuantityConstraints();
   }
 
   private normalizeStatus(status: string | null | undefined): TourStatusValue {
@@ -701,10 +818,6 @@ export class ToursComponent implements OnInit {
 
   private resolveTeamId(team: Team): number | null {
     return team.teamId ?? null;
-  }
-
-  private resolveProductId(product: Product): number | null {
-    return product.productId ?? product.id ?? null;
   }
 
   private resolveSalesPointId(point: SalesPoint): number | null {

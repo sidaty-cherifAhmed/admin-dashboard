@@ -18,6 +18,10 @@ export class StocksService {
     return this.http.get<Stock>(`${this.api}/${id}`);
   }
 
+  getQuantityByProductId(productId: number): Observable<number> {
+    return this.http.get<number>(`${this.api}/product/${productId}/quantity`);
+  }
+
   create(data: StockPayload): Observable<Stock> {
     return this.http.post<Stock>(this.api, data);
   }

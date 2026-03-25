@@ -34,7 +34,7 @@
           <mat-select formControlName="vehicleId">
             <mat-option [value]="0" disabled>اختر المركبة</mat-option>
             <mat-option *ngFor="let vehicle of vehicles" [value]="vehicle.vehicleId ?? vehicle.id">
-              {{ vehicle.vehicleCode }} 
+              {{ vehicle.vehicleCode }}
             </mat-option>
           </mat-select>
           <mat-error *ngIf="tourForm.controls.vehicleId.hasError('required') || tourForm.controls.vehicleId.hasError('min')">
@@ -99,24 +99,33 @@
               <mat-label>المنتج</mat-label>
               <mat-select formControlName="productId">
                 <mat-option [value]="0" disabled>اختر المنتج</mat-option>
-                <mat-option *ngFor="let product of products" [value]="product.productId ?? product.id">
-                  {{ product.productName }} ({{ product.productCode }})
+                <mat-option *ngFor="let product of products" [value]="product.productId">
+                  {{ product.productName }}
                 </mat-option>
               </mat-select>
-              <mat-error
-                *ngIf="
-                  itemGroup.controls.productId.hasError('required') || itemGroup.controls.productId.hasError('min')
-                "
-              >
+              <mat-error *ngIf="itemGroup.controls.productId.hasError('required') || itemGroup.controls.productId.hasError('min')">
                 المنتج مطلوب
               </mat-error>
             </mat-form-field>
 
             <mat-form-field appearance="outline">
               <mat-label>الكمية المحملة</mat-label>
-              <input matInput type="number" min="1" step="1" formControlName="loadedQt" />
+              <input
+                matInput
+                type="number"
+                min="1"
+                step="1"
+                formControlName="loadedQt"
+                [max]="productAvailableQuantity(itemGroup.controls.productId.value)"
+              />
+              <mat-hint *ngIf="itemGroup.controls.productId.value > 0">
+                المتاح في المخزن: {{ productAvailableQuantity(itemGroup.controls.productId.value) }}
+              </mat-hint>
               <mat-error *ngIf="itemGroup.controls.loadedQt.hasError('required')">الكمية مطلوبة</mat-error>
               <mat-error *ngIf="itemGroup.controls.loadedQt.hasError('min')">يجب أن تكون الكمية 1 أو أكثر</mat-error>
+              <mat-error *ngIf="itemGroup.controls.loadedQt.hasError('max')">
+                الكمية المدخلة أكبر من المتاح في المخزن
+              </mat-error>
             </mat-form-field>
           </div>
 

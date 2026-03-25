@@ -18,6 +18,12 @@ export class ProductsService {
     return this.http.get<Product>(`${this.api}/${id}`);
   }
 
+  getProductName(id: number): Observable<string> {
+    return this.http.get(`${this.api}/${id}/product-name`, {
+      responseType: 'text',
+    });
+  }
+
   create(data: ProductPayload): Observable<Product> {
     return this.http.post<Product>(this.api, data);
   }
