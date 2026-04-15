@@ -1,113 +1,57 @@
-<mat-card class="page" dir="rtl">
+<mat-card class="page" [attr.dir]="i18n.direction()">
   <div class="page-header">
     <div>
-      <h2>إدارة المركبات</h2>
-      <p>إضافة وتعديل وحذف والبحث داخل جميع المركبات.</p>
+      <h2>{{ 'vehicles.title' | t }}</h2>
+      <p>{{ 'vehicles.description' | t }}</p>
     </div>
-
     <div class="header-actions">
       <mat-form-field appearance="outline" class="search">
         <mat-icon matPrefix>search</mat-icon>
-        <input matInput [formControl]="filterForm.controls.search" placeholder="بحث بالكود أو اللوحة أو السعة" />
+        <input matInput [formControl]="filterForm.controls.search" [placeholder]="'vehicles.searchPlaceholder' | t" />
       </mat-form-field>
-
       <button mat-flat-button color="primary" type="button" (click)="openCreateVehicle()">
         <mat-icon>directions_car</mat-icon>
-        مركبة جديدة
+        {{ 'vehicles.new' | t }}
       </button>
     </div>
   </div>
 
   <mat-card class="editor" *ngIf="showForm">
-    <div class="editor-title">{{ isEditMode ? 'تعديل المركبة' : 'إضافة مركبة جديدة' }}</div>
-
+    <div class="editor-title">{{ isEditMode ? ('vehicles.editTitle' | t) : ('vehicles.createTitle' | t) }}</div>
     <form [formGroup]="vehicleForm" (ngSubmit)="submitVehicle()">
       <div class="form-grid">
-        <mat-form-field appearance="outline">
-          <mat-label>كود المركبة</mat-label>
-          <input matInput formControlName="vehicleCode" />
-          <mat-error *ngIf="vehicleForm.controls.vehicleCode.hasError('required')">الكود مطلوب</mat-error>
-        </mat-form-field>
-
-        <mat-form-field appearance="outline">
-          <mat-label>رقم اللوحة</mat-label>
-          <input matInput formControlName="plateNumber" />
-          <mat-error *ngIf="vehicleForm.controls.plateNumber.hasError('required')">رقم اللوحة مطلوب</mat-error>
-        </mat-form-field>
-
-        <mat-form-field appearance="outline">
-          <mat-label>السعة</mat-label>
-          <input matInput type="number" min="1" step="1" formControlName="capacity" />
-          <mat-error *ngIf="vehicleForm.controls.capacity.hasError('required')">السعة مطلوبة</mat-error>
-          <mat-error *ngIf="vehicleForm.controls.capacity.hasError('min')">يجب أن تكون السعة 1 أو أكثر</mat-error>
-        </mat-form-field>
+        <mat-form-field appearance="outline"><mat-label>{{ 'vehicles.vehicleCode' | t }}</mat-label><input matInput formControlName="vehicleCode" /><mat-error *ngIf="vehicleForm.controls.vehicleCode.hasError('required')">{{ 'vehicles.vehicleCodeRequired' | t }}</mat-error></mat-form-field>
+        <mat-form-field appearance="outline"><mat-label>{{ 'vehicles.mark' | t }}</mat-label><input matInput formControlName="mark" /></mat-form-field>
+        <mat-form-field appearance="outline"><mat-label>{{ 'vehicles.type' | t }}</mat-label><input matInput formControlName="type" /></mat-form-field>
+        <mat-form-field appearance="outline"><mat-label>{{ 'vehicles.year' | t }}</mat-label><input matInput type="number" step="1" formControlName="year" /></mat-form-field>
+        <mat-form-field appearance="outline"><mat-label>{{ 'vehicles.plateNumber' | t }}</mat-label><input matInput formControlName="plateNumber" /></mat-form-field>
+        <mat-form-field appearance="outline"><mat-label>{{ 'vehicles.capacity' | t }}</mat-label><input matInput type="number" step="1" formControlName="capacity" /></mat-form-field>
+        <mat-form-field appearance="outline"><mat-label>{{ 'vehicles.mileage' | t }}</mat-label><input matInput type="number" step="1" formControlName="mileage" /></mat-form-field>
       </div>
-
       <div class="form-footer">
-        <mat-slide-toggle formControlName="isActive">نشطة</mat-slide-toggle>
-
-        <div class="buttons">
-          <button mat-button type="button" (click)="closeForm()">إلغاء</button>
-          <button mat-flat-button color="primary" type="submit" [disabled]="submitting">
-            {{ submitting ? 'جاري الحفظ...' : (isEditMode ? 'حفظ التعديل' : 'إنشاء المركبة') }}
-          </button>
-        </div>
+        <mat-slide-toggle formControlName="isActive">{{ 'vehicles.activeVehicle' | t }}</mat-slide-toggle>
+        <div class="buttons"><button mat-button type="button" (click)="closeForm()">{{ 'common.cancel' | t }}</button><button mat-flat-button color="primary" type="submit" [disabled]="submitting">{{ submitting ? ('common.saving' | t) : ('common.saveChanges' | t) }}</button></div>
       </div>
     </form>
   </mat-card>
 
   <div class="table-wrap mat-elevation-z2" *ngIf="!loading; else loadingBlock">
     <table mat-table [dataSource]="dataSource" matSort>
-      <ng-container matColumnDef="vehicleCode">
-        <th mat-header-cell *matHeaderCellDef mat-sort-header>الكود</th>
-        <td mat-cell *matCellDef="let vehicle" class="mono">{{ vehicle.vehicleCode }}</td>
-      </ng-container>
-
-      <ng-container matColumnDef="plateNumber">
-        <th mat-header-cell *matHeaderCellDef mat-sort-header>رقم اللوحة</th>
-        <td mat-cell *matCellDef="let vehicle" class="mono">{{ vehicle.plateNumber }}</td>
-      </ng-container>
-
-      <ng-container matColumnDef="capacity">
-        <th mat-header-cell *matHeaderCellDef mat-sort-header>السعة</th>
-        <td mat-cell *matCellDef="let vehicle">
-          <span class="cap-pill">{{ vehicle.capacity }}</span>
-        </td>
-      </ng-container>
-
-      <ng-container matColumnDef="isActive">
-        <th mat-header-cell *matHeaderCellDef mat-sort-header>الحالة</th>
-        <td mat-cell *matCellDef="let vehicle">
-          <span class="status-pill" [class.active]="vehicle.isActive" [class.inactive]="!vehicle.isActive">
-            {{ vehicle.isActive ? 'نشطة' : 'غير نشطة' }}
-          </span>
-        </td>
-      </ng-container>
-
-      <ng-container matColumnDef="actions">
-        <th mat-header-cell *matHeaderCellDef>إجراءات</th>
-        <td mat-cell *matCellDef="let vehicle" class="actions-cell">
-          <button mat-icon-button color="primary" matTooltip="تعديل" type="button" (click)="openEditVehicle(vehicle)">
-            <mat-icon>edit</mat-icon>
-          </button>
-          <button mat-icon-button color="warn" matTooltip="حذف" type="button" (click)="deleteVehicle(vehicle)">
-            <mat-icon>delete</mat-icon>
-          </button>
-        </td>
-      </ng-container>
-
+      <ng-container matColumnDef="vehicleCode"><th mat-header-cell *matHeaderCellDef mat-sort-header>{{ 'common.code' | t }}</th><td mat-cell *matCellDef="let vehicle" class="mono">{{ vehicle.vehicleCode }}</td></ng-container>
+      <ng-container matColumnDef="mark"><th mat-header-cell *matHeaderCellDef mat-sort-header>{{ 'vehicles.mark' | t }}</th><td mat-cell *matCellDef="let vehicle">{{ vehicle.mark || '-' }}</td></ng-container>
+      <ng-container matColumnDef="type"><th mat-header-cell *matHeaderCellDef mat-sort-header>{{ 'vehicles.type' | t }}</th><td mat-cell *matCellDef="let vehicle">{{ vehicle.type || '-' }}</td></ng-container>
+      <ng-container matColumnDef="year"><th mat-header-cell *matHeaderCellDef mat-sort-header>{{ 'vehicles.year' | t }}</th><td mat-cell *matCellDef="let vehicle">{{ vehicle.year ?? '-' }}</td></ng-container>
+      <ng-container matColumnDef="plateNumber"><th mat-header-cell *matHeaderCellDef mat-sort-header>{{ 'vehicles.plateNumber' | t }}</th><td mat-cell *matCellDef="let vehicle" class="mono">{{ vehicle.plateNumber || '-' }}</td></ng-container>
+      <ng-container matColumnDef="capacity"><th mat-header-cell *matHeaderCellDef mat-sort-header>{{ 'vehicles.capacity' | t }}</th><td mat-cell *matCellDef="let vehicle"><span class="cap-pill">{{ vehicle.capacity ?? '-' }}</span></td></ng-container>
+      <ng-container matColumnDef="mileage"><th mat-header-cell *matHeaderCellDef mat-sort-header>{{ 'vehicles.mileage' | t }}</th><td mat-cell *matCellDef="let vehicle">{{ vehicle.mileage ?? '-' }}</td></ng-container>
+      <ng-container matColumnDef="isActive"><th mat-header-cell *matHeaderCellDef mat-sort-header>{{ 'common.status' | t }}</th><td mat-cell *matCellDef="let vehicle"><span class="status-pill" [class.active]="vehicle.isActive" [class.inactive]="!vehicle.isActive">{{ vehicle.isActive ? ('common.active' | t) : ('common.inactive' | t) }}</span></td></ng-container>
+      <ng-container matColumnDef="actions"><th mat-header-cell *matHeaderCellDef>{{ 'common.actions' | t }}</th><td mat-cell *matCellDef="let vehicle" class="actions-cell"><button mat-icon-button color="primary" [matTooltip]="'common.edit' | t" type="button" (click)="openEditVehicle(vehicle)"><mat-icon>edit</mat-icon></button><button mat-icon-button color="warn" [matTooltip]="'common.delete' | t" type="button" (click)="deleteVehicle(vehicle)"><mat-icon>delete</mat-icon></button></td></ng-container>
       <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
       <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
-
-      <tr class="empty" *ngIf="dataSource.data.length === 0">
-        <td [attr.colspan]="displayedColumns.length">لا توجد مركبات حالياً</td>
-      </tr>
+      <tr class="empty" *ngIf="dataSource.data.length === 0"><td [attr.colspan]="displayedColumns.length">{{ 'vehicles.empty' | t }}</td></tr>
     </table>
   </div>
 
-  <ng-template #loadingBlock>
-    <div class="loading">جاري تحميل المركبات...</div>
-  </ng-template>
-
+  <ng-template #loadingBlock><div class="loading">{{ 'vehicles.loading' | t }}</div></ng-template>
   <mat-paginator [pageSizeOptions]="[5, 10, 20, 50]" [pageSize]="10" showFirstLastButtons></mat-paginator>
 </mat-card>

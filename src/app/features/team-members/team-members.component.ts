@@ -1,27 +1,29 @@
 import { CommonModule } from '@angular/common';
 import { Component, DestroyRef, OnInit, ViewChild, inject } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { finalize, debounceTime } from 'rxjs';
+import { AbstractControl, FormBuilder, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
+import { Observable, debounceTime, finalize, forkJoin, of } from 'rxjs';
 
-import { MatTableDataSource, MatTableModule } from '@angular/material/table';
-import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
-import { MatSort, MatSortModule } from '@angular/material/sort';
-import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
-import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatCardModule } from '@angular/material/card';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatIconModule } from '@angular/material/icon';
+import { MatInputModule } from '@angular/material/input';
+import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
 import { MatSelectModule } from '@angular/material/select';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatSort, MatSortModule } from '@angular/material/sort';
+import { MatTableDataSource, MatTableModule } from '@angular/material/table';
+import { MatTooltipModule } from '@angular/material/tooltip';
 
 import { TeamMember, TeamMemberPayload } from '../../core/models/team-member.model';
 import { Team } from '../../core/models/team.model';
 import { User } from '../../core/models/user.model';
+import { I18nService } from '../../core/services/i18n.service';
 import { TeamMembersService } from '../../core/services/team-members.service';
 import { TeamsService } from '../../core/services/teams.service';
 import { UsersService } from '../../core/services/users.service';
+import { TranslatePipe } from '../../shared/pipes/translate.pipe';
 
 @Component({
   selector: 'app-team-members',
@@ -40,6 +42,7 @@ import { UsersService } from '../../core/services/users.service';
     MatCardModule,
     MatSelectModule,
     MatSnackBarModule,
+    TranslatePipe,
   ],
   templateUrl: './team-members.component.html',
   styleUrl: './team-members.component.scss',
@@ -52,6 +55,7 @@ export class TeamMembersComponent implements OnInit {
   private readonly snackBar = inject(MatSnackBar);
   private readonly destroyRef = inject(DestroyRef);
 
+  readonly i18n = inject(I18nService);
   displayedColumns: string[] = ['user', 'team', 'actions'];
   dataSource = new MatTableDataSource<TeamMember>([]);
 
@@ -60,7 +64,8 @@ export class TeamMembersComponent implements OnInit {
   });
 
   readonly teamMemberForm = this.fb.group({
-    userId: this.fb.control<number | null>(null, [Validators.required]),
+    userId: this.fb.control<number | null>(null),
+    userIds: this.fb.nonNullable.control<number[]>([], [this.requireSelection]),
     teamId: this.fb.control<number | null>(null, [Validators.required]),
   });
 
@@ -98,9 +103,7 @@ export class TeamMembersComponent implements OnInit {
           this.dataSource.paginator = this.paginator;
           this.dataSource.sort = this.sort;
         },
-        error: () => {
-          this.openSnack('فشل تحميل أعضاء الفرق');
-        },
+        error: () => this.openSnack(this.i18n.t('teamMembers.loadError')),
       });
   }
 
@@ -109,9 +112,7 @@ export class TeamMembersComponent implements OnInit {
       next: (users) => {
         this.users = users ?? [];
       },
-      error: () => {
-        this.openSnack('فشل تحميل المستخدمين');
-      },
+      error: () => this.openSnack(this.i18n.t('teamMembers.loadUsersError')),
     });
   }
 
@@ -120,9 +121,7 @@ export class TeamMembersComponent implements OnInit {
       next: (teams) => {
         this.teams = teams ?? [];
       },
-      error: () => {
-        this.openSnack('فشل تحميل الفرق');
-      },
+      error: () => this.openSnack(this.i18n.t('teamMembers.loadTeamsError')),
     });
   }
 
@@ -131,8 +130,10 @@ export class TeamMembersComponent implements OnInit {
     this.editingTeamMemberId = null;
     this.teamMemberForm.reset({
       userId: null,
+      userIds: [],
       teamId: null,
     });
+    this.syncUserValidationState();
   }
 
   openEditTeamMember(teamMember: TeamMember): void {
@@ -140,8 +141,10 @@ export class TeamMembersComponent implements OnInit {
     this.editingTeamMemberId = teamMember.teamMemberId;
     this.teamMemberForm.patchValue({
       userId: teamMember.userId,
+      userIds: [teamMember.userId],
       teamId: teamMember.teamId,
     });
+    this.syncUserValidationState();
   }
 
   closeForm(): void {
@@ -150,47 +153,48 @@ export class TeamMembersComponent implements OnInit {
   }
 
   submitTeamMember(): void {
+    this.syncUserValidationState();
     if (this.teamMemberForm.invalid) {
       this.teamMemberForm.markAllAsTouched();
       return;
     }
 
     const raw = this.teamMemberForm.getRawValue();
-    const payload: TeamMemberPayload = {
-      userId: raw.userId as number,
-      teamId: raw.teamId as number,
-    };
-    this.submitting = true;
+    const duplicateSelection = this.findDuplicateSelection(raw.teamId as number, this.isEditMode ? [raw.userId as number] : raw.userIds);
+    if (duplicateSelection) {
+      this.openSnack(this.i18n.t('teamMembers.duplicateMember'));
+      return;
+    }
 
-    const request$ = this.isEditMode
-      ? this.teamMembersService.update(this.editingTeamMemberId as number, payload)
-      : this.teamMembersService.create(payload);
+    this.submitting = true;
+    const request$: Observable<unknown> = this.isEditMode
+      ? this.teamMembersService.update(this.editingTeamMemberId as number, {
+          userId: raw.userId as number,
+          teamId: raw.teamId as number,
+        })
+      : this.createTeamMembers(raw.teamId as number, raw.userIds);
 
     request$.pipe(finalize(() => (this.submitting = false))).subscribe({
       next: () => {
-        this.openSnack(this.isEditMode ? 'تم تعديل عضو الفريق' : 'تمت إضافة عضو للفريق');
+        this.openSnack(this.i18n.t(this.isEditMode ? 'teamMembers.updateSuccess' : 'teamMembers.createSuccess'));
         this.closeForm();
         this.loadTeamMembers();
       },
-      error: () => {
-        this.openSnack(this.isEditMode ? 'فشل تعديل عضو الفريق' : 'فشل إضافة عضو للفريق');
-      },
+      error: () => this.openSnack(this.i18n.t(this.isEditMode ? 'teamMembers.updateError' : 'teamMembers.createError')),
     });
   }
 
   deleteTeamMember(id: number): void {
-    if (!confirm('هل أنت متأكد من حذف هذا الربط؟')) {
+    if (!confirm(this.i18n.t('teamMembers.deleteConfirm'))) {
       return;
     }
 
     this.teamMembersService.delete(id).subscribe({
       next: () => {
-        this.openSnack('تم حذف الربط');
+        this.openSnack(this.i18n.t('teamMembers.deleteSuccess'));
         this.loadTeamMembers();
       },
-      error: () => {
-        this.openSnack('فشل حذف الربط');
-      },
+      error: () => this.openSnack(this.i18n.t('teamMembers.deleteError')),
     });
   }
 
@@ -239,8 +243,62 @@ export class TeamMembersComponent implements OnInit {
       });
   }
 
+  private createTeamMembers(teamId: number, userIds: number[]): Observable<unknown> {
+    const uniqueUserIds = [...new Set(userIds.map((userId) => Number(userId)).filter((userId) => userId > 0))];
+    if (uniqueUserIds.length === 0) {
+      return of([]);
+    }
+
+    return forkJoin(
+      uniqueUserIds.map((userId) =>
+        this.teamMembersService.create({
+          userId,
+          teamId,
+        } satisfies TeamMemberPayload),
+      ),
+    );
+  }
+
+  private findDuplicateSelection(teamId: number, userIds: number[]): number | null {
+    const selectedTeamId = Number(teamId);
+    const selectedUserIds = [...new Set(userIds.map((userId) => Number(userId)).filter((userId) => userId > 0))];
+    const currentId = this.editingTeamMemberId;
+
+    return (
+      selectedUserIds.find((userId) =>
+        this.dataSource.data.some(
+          (teamMember) =>
+            teamMember.teamId === selectedTeamId &&
+            teamMember.userId === userId &&
+            (!currentId || teamMember.teamMemberId !== currentId),
+        ),
+      ) ?? null
+    );
+  }
+
+  private syncUserValidationState(): void {
+    const userIdControl = this.teamMemberForm.controls.userId;
+    const userIdsControl = this.teamMemberForm.controls.userIds;
+
+    if (this.isEditMode) {
+      userIdControl.setValidators([Validators.required]);
+      userIdsControl.clearValidators();
+    } else {
+      userIdControl.clearValidators();
+      userIdsControl.setValidators([this.requireSelection]);
+    }
+
+    userIdControl.updateValueAndValidity({ emitEvent: false });
+    userIdsControl.updateValueAndValidity({ emitEvent: false });
+  }
+
+  private requireSelection(control: AbstractControl): ValidationErrors | null {
+    const value = control.value;
+    return Array.isArray(value) && value.length > 0 ? null : { required: true };
+  }
+
   private openSnack(message: string): void {
-    this.snackBar.open(message, 'إغلاق', {
+    this.snackBar.open(message, this.i18n.t('common.closeAction'), {
       duration: 2600,
       horizontalPosition: 'start',
       verticalPosition: 'top',

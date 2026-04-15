@@ -1,33 +1,29 @@
-﻿import { CommonModule } from '@angular/common';
+import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, DestroyRef, OnInit, ViewChild, inject } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import {
-  FormBuilder,
-  ReactiveFormsModule,
-  Validators,
-} from '@angular/forms';
-
-import { MatTableDataSource, MatTableModule } from '@angular/material/table';
-import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
-import { MatSort, MatSortModule } from '@angular/material/sort';
-import { MatIconModule } from '@angular/material/icon';
+import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
-import { MatChipsModule } from '@angular/material/chips';
-import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatCardModule } from '@angular/material/card';
+import { MatChipsModule } from '@angular/material/chips';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatIconModule } from '@angular/material/icon';
+import { MatInputModule } from '@angular/material/input';
+import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
 import { MatSelectModule } from '@angular/material/select';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-import { finalize } from 'rxjs';
+import { MatSort, MatSortModule } from '@angular/material/sort';
+import { MatTableDataSource, MatTableModule } from '@angular/material/table';
+import { MatTooltipModule } from '@angular/material/tooltip';
+import { debounceTime, finalize } from 'rxjs';
 
-import { UsersService } from '../../core/services/users.service';
-import { RolesService } from '../../core/services/roles.service';
 import { Role } from '../../core/models/role.model';
 import { User, UserPayload } from '../../core/models/user.model';
-import { debounceTime } from 'rxjs';
+import { RolesService } from '../../core/services/roles.service';
+import { I18nService } from '../../core/services/i18n.service';
+import { UsersService } from '../../core/services/users.service';
+import { TranslatePipe } from '../../shared/pipes/translate.pipe';
 
 @Component({
   selector: 'app-users',
@@ -48,6 +44,7 @@ import { debounceTime } from 'rxjs';
     MatSelectModule,
     MatSlideToggleModule,
     MatSnackBarModule,
+    TranslatePipe,
   ],
   templateUrl: './users.component.html',
   styleUrl: './users.component.scss',
@@ -59,20 +56,11 @@ export class UsersComponent implements OnInit {
   private readonly snackBar = inject(MatSnackBar);
   private readonly destroyRef = inject(DestroyRef);
 
-  displayedColumns: string[] = [
-    'fullName',
-    'email',
-    'phone',
-    'roleName',
-    'isActive',
-    'actions',
-  ];
+  readonly i18n = inject(I18nService);
+  displayedColumns: string[] = ['fullName', 'email', 'phone', 'roleName', 'isActive', 'actions'];
   dataSource = new MatTableDataSource<User>([]);
 
-  readonly filterForm = this.fb.nonNullable.group({
-    search: [''],
-  });
-
+  readonly filterForm = this.fb.nonNullable.group({ search: [''] });
   readonly userForm = this.fb.group({
     fullName: this.fb.nonNullable.control('', [Validators.required, Validators.minLength(3)]),
     email: this.fb.nonNullable.control('', [Validators.required, Validators.email]),
@@ -114,9 +102,7 @@ export class UsersComponent implements OnInit {
           this.dataSource.paginator = this.paginator;
           this.dataSource.sort = this.sort;
         },
-        error: () => {
-          this.openSnack('فشل تحميل المستخدمين');
-        },
+        error: () => this.openSnack(this.i18n.t('users.loadError')),
       });
   }
 
@@ -125,9 +111,7 @@ export class UsersComponent implements OnInit {
       next: (roles) => {
         this.roles = roles ?? [];
       },
-      error: () => {
-        this.openSnack('فشل تحميل الأدوار');
-      },
+      error: () => this.openSnack(this.i18n.t('users.loadRolesError')),
     });
   }
 
@@ -181,18 +165,19 @@ export class UsersComponent implements OnInit {
       roleId: raw.roleId as number,
       isActive: raw.isActive,
     };
+
     if (!this.isEditMode) {
       payload.password = raw.password;
     }
-    this.submitting = true;
 
+    this.submitting = true;
     const request$ = this.isEditMode
       ? this.usersService.update(this.editingUserId as number, payload)
       : this.usersService.create(payload);
 
     request$.pipe(finalize(() => (this.submitting = false))).subscribe({
       next: () => {
-        this.openSnack(this.isEditMode ? 'تم تعديل المستخدم' : 'تم إنشاء المستخدم');
+        this.openSnack(this.i18n.t(this.isEditMode ? 'users.updateSuccess' : 'users.createSuccess'));
         this.closeForm();
         this.loadUsers();
       },
@@ -201,7 +186,7 @@ export class UsersComponent implements OnInit {
           typeof error.error === 'string'
             ? error.error
             : (error.error?.message as string | undefined) ?? '';
-        const fallback = this.isEditMode ? 'فشل تعديل المستخدم' : 'فشل إنشاء المستخدم';
+        const fallback = this.i18n.t(this.isEditMode ? 'users.updateError' : 'users.createError');
         const message = backendMessage || `${fallback} (HTTP ${error.status || 0})`;
         this.openSnack(message);
       },
@@ -209,18 +194,16 @@ export class UsersComponent implements OnInit {
   }
 
   deleteUser(id: number): void {
-    if (!confirm('هل أنت متأكد من حذف هذا المستخدم؟')) {
+    if (!confirm(this.i18n.t('users.deleteConfirm'))) {
       return;
     }
 
     this.usersService.delete(id).subscribe({
       next: () => {
-        this.openSnack('تم حذف المستخدم');
+        this.openSnack(this.i18n.t('users.deleteSuccess'));
         this.loadUsers();
       },
-      error: () => {
-        this.openSnack('فشل حذف المستخدم');
-      },
+      error: () => this.openSnack(this.i18n.t('users.deleteError')),
     });
   }
 
@@ -229,21 +212,14 @@ export class UsersComponent implements OnInit {
   }
 
   private initFiltering(): void {
-    this.dataSource.filterPredicate = (data, filter) => {
-      const text = filter.trim().toLowerCase();
-      return [
-        data.fullName,
-        data.email,
-        data.phone,
-        data.roleName ?? this.roleNameById(data.roleId),
-      ]
+    this.dataSource.filterPredicate = (data, filter) =>
+      [data.fullName, data.email, data.phone, data.roleName ?? this.roleNameById(data.roleId)]
         .join(' ')
         .toLowerCase()
-        .includes(text);
-    };
+        .includes(filter.trim().toLowerCase());
 
     this.filterForm.controls.search.valueChanges
-      .pipe(debounceTime(300),takeUntilDestroyed(this.destroyRef))
+      .pipe(debounceTime(300), takeUntilDestroyed(this.destroyRef))
       .subscribe((value) => {
         this.dataSource.filter = value.trim().toLowerCase();
         this.dataSource.paginator?.firstPage();
@@ -251,12 +227,10 @@ export class UsersComponent implements OnInit {
   }
 
   private openSnack(message: string): void {
-    this.snackBar.open(message, 'إغلاق', {
+    this.snackBar.open(message, this.i18n.t('common.closeAction'), {
       duration: 2600,
       horizontalPosition: 'start',
       verticalPosition: 'top',
     });
   }
 }
-
-

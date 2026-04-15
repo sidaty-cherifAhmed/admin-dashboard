@@ -1,0 +1,37 @@
+<section class="summary-page" [attr.dir]="i18n.direction()">
+
+  <div class="page-header">
+    <div>
+      <h2>{{ 'dashboard.title' | t }}</h2>
+      <p>{{ 'dashboard.description' | t }}</p>
+    </div>
+
+    <button mat-stroked-button type="button" (click)="loadSummary()" [disabled]="loading()">
+      <mat-icon>refresh</mat-icon>
+      <span>{{ 'dashboard.refresh' | t }}</span>
+    </button>
+  </div>
+
+  <div class="state loading" *ngIf="loading()">
+    <mat-icon>hourglass_top</mat-icon>
+    <span>{{ 'dashboard.loading' | t }}</span>
+  </div>
+
+  <div class="state error" *ngIf="!loading() && loadFailed()">
+    <mat-icon>error_outline</mat-icon>
+    <span>{{ 'dashboard.loadError' | t }}</span>
+  </div>
+
+  <div class="stats-grid" *ngIf="!loading() && !loadFailed()">
+    <article class="stat-card" *ngFor="let card of cards" [ngClass]="'tone-' + card.tone">
+      <div class="icon-wrap">
+        <mat-icon>{{ card.icon }}</mat-icon>
+      </div>
+
+      <div>
+        <div class="stat-value">{{ valueFor(card) | number }}</div>
+        <div class="stat-label">{{ card.labelKey | t }}</div>
+      </div>
+    </article>
+  </div>
+</section>

@@ -2,23 +2,23 @@ import { CommonModule } from '@angular/common';
 import { Component, DestroyRef, OnInit, ViewChild, inject } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-
-import { MatTableDataSource, MatTableModule } from '@angular/material/table';
-import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
-import { MatSort, MatSortModule } from '@angular/material/sort';
-import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
-import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatCardModule } from '@angular/material/card';
-import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatIconModule } from '@angular/material/icon';
+import { MatInputModule } from '@angular/material/input';
+import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
-import { finalize } from 'rxjs';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatSort, MatSortModule } from '@angular/material/sort';
+import { MatTableDataSource, MatTableModule } from '@angular/material/table';
+import { MatTooltipModule } from '@angular/material/tooltip';
+import { debounceTime, finalize } from 'rxjs';
 
 import { SalesPoint, SalesPointPayload } from '../../core/models/salespoint.model';
+import { I18nService } from '../../core/services/i18n.service';
 import { SalesPointsService } from '../../core/services/salespoints.service';
-import { debounceTime } from 'rxjs';
+import { TranslatePipe } from '../../shared/pipes/translate.pipe';
 
 @Component({
   selector: 'app-salespoints',
@@ -37,25 +37,21 @@ import { debounceTime } from 'rxjs';
     MatCardModule,
     MatSnackBarModule,
     MatSlideToggleModule,
+    TranslatePipe,
   ],
   templateUrl: './salespoints.component.html',
   styleUrl: './salespoints.component.scss',
 })
 export class SalesPointsComponent implements OnInit {
-
   private readonly salesPointsService = inject(SalesPointsService);
   private readonly fb = inject(FormBuilder);
   private readonly snackBar = inject(MatSnackBar);
   private readonly destroyRef = inject(DestroyRef);
 
-
+  readonly i18n = inject(I18nService);
   displayedColumns: string[] = ['name', 'zone', 'adresse', 'coordinates', 'isActive', 'actions'];
   dataSource = new MatTableDataSource<SalesPoint>([]);
-
-  readonly filterForm = this.fb.nonNullable.group({
-    search: [''],
-  });
-
+  readonly filterForm = this.fb.nonNullable.group({ search: [''] });
   readonly salesPointForm = this.fb.nonNullable.group({
     name: ['', [Validators.required, Validators.minLength(2)]],
     adresse: ['', [Validators.required, Validators.minLength(3)]],
@@ -64,7 +60,6 @@ export class SalesPointsComponent implements OnInit {
     gpsLongitude: [0, [Validators.required, Validators.min(-180), Validators.max(180)]],
     isActive: [true],
   });
-  
 
   loading = true;
   submitting = false;
@@ -77,9 +72,7 @@ export class SalesPointsComponent implements OnInit {
 
   ngOnInit(): void {
     this.initFiltering();
-    queueMicrotask(() => {
-      this.loadSalesPoints();
-    });
+    queueMicrotask(() => this.loadSalesPoints());
   }
 
   get isEditMode(): boolean {
@@ -88,32 +81,20 @@ export class SalesPointsComponent implements OnInit {
 
   loadSalesPoints(): void {
     this.loading = true;
-    this.salesPointsService
-      .getAll()
-      .pipe(finalize(() => (this.loading = false)))
-      .subscribe({
-        next: (salesPoints) => {
-          this.dataSource.data = salesPoints ?? [];
-          this.dataSource.paginator = this.paginator;
-          this.dataSource.sort = this.sort;
-        },
-        error: () => {
-          this.openSnack('فشل تحميل نقاط البيع');
-        },
-      });
+    this.salesPointsService.getAll().pipe(finalize(() => (this.loading = false))).subscribe({
+      next: (salesPoints) => {
+        this.dataSource.data = salesPoints ?? [];
+        this.dataSource.paginator = this.paginator;
+        this.dataSource.sort = this.sort;
+      },
+      error: () => this.openSnack(this.i18n.t('salespoints.loadError')),
+    });
   }
 
   openCreateSalesPoint(): void {
     this.showForm = true;
     this.editingSalesPointId = null;
-    this.salesPointForm.reset({
-      name: '',
-      adresse: '',
-      zone: '',
-      gpsLatitude: 0,
-      gpsLongitude: 0,
-      isActive: true,
-    });
+    this.salesPointForm.reset({ name: '', adresse: '', zone: '', gpsLatitude: 0, gpsLongitude: 0, isActive: true });
   }
 
   openEditSalesPoint(point: SalesPoint): void {
@@ -138,12 +119,10 @@ export class SalesPointsComponent implements OnInit {
     if (this.locating) {
       return;
     }
-
     if (!('geolocation' in navigator)) {
-      this.openSnack('المتصفح لا يدعم تحديد الموقع');
+      this.openSnack(this.i18n.t('salespoints.geoUnsupported'));
       return;
     }
-
     this.locating = true;
     navigator.geolocation.getCurrentPosition(
       (position) => {
@@ -154,16 +133,13 @@ export class SalesPointsComponent implements OnInit {
         this.salesPointForm.controls.gpsLatitude.markAsTouched();
         this.salesPointForm.controls.gpsLongitude.markAsTouched();
         this.locating = false;
-        this.openSnack('تم تعبئة الإحداثيات الحالية');
+        this.openSnack(this.i18n.t('salespoints.geoSuccess'));
       },
       () => {
         this.locating = false;
-        this.openSnack('فشل تحديد الموقع الحالي');
+        this.openSnack(this.i18n.t('salespoints.geoError'));
       },
-      {
-        enableHighAccuracy: true,
-        timeout: 10000,
-      },
+      { enableHighAccuracy: true, timeout: 10000 },
     );
   }
 
@@ -172,7 +148,6 @@ export class SalesPointsComponent implements OnInit {
       this.salesPointForm.markAllAsTouched();
       return;
     }
-
     const raw = this.salesPointForm.getRawValue();
     const payload: SalesPointPayload = {
       name: raw.name.trim(),
@@ -184,41 +159,32 @@ export class SalesPointsComponent implements OnInit {
     };
 
     this.submitting = true;
-    const request$ = this.isEditMode
-      ? this.salesPointsService.update(this.editingSalesPointId as number, payload)
-      : this.salesPointsService.create(payload);
-
+    const request$ = this.isEditMode ? this.salesPointsService.update(this.editingSalesPointId as number, payload) : this.salesPointsService.create(payload);
     request$.pipe(finalize(() => (this.submitting = false))).subscribe({
       next: () => {
-        this.openSnack(this.isEditMode ? 'تم تعديل نقطة البيع' : 'تم إنشاء نقطة البيع');
+        this.openSnack(this.i18n.t(this.isEditMode ? 'salespoints.updateSuccess' : 'salespoints.createSuccess'));
         this.closeForm();
         this.loadSalesPoints();
       },
-      error: () => {
-        this.openSnack(this.isEditMode ? 'فشل تعديل نقطة البيع' : 'فشل إنشاء نقطة البيع');
-      },
+      error: () => this.openSnack(this.i18n.t(this.isEditMode ? 'salespoints.updateError' : 'salespoints.createError')),
     });
   }
 
   deleteSalesPoint(point: SalesPoint): void {
     const id = this.resolveSalesPointId(point);
     if (!id) {
-      this.openSnack('تعذر تحديد معرف نقطة البيع');
+      this.openSnack(this.i18n.t('salespoints.resolveIdError'));
       return;
     }
-
-    if (!confirm('هل أنت متأكد من حذف نقطة البيع هذه؟')) {
+    if (!confirm(this.i18n.t('salespoints.deleteConfirm'))) {
       return;
     }
-
     this.salesPointsService.delete(id).subscribe({
       next: () => {
-        this.openSnack('تم حذف نقطة البيع');
+        this.openSnack(this.i18n.t('salespoints.deleteSuccess'));
         this.loadSalesPoints();
       },
-      error: () => {
-        this.openSnack('فشل حذف نقطة البيع');
-      },
+      error: () => this.openSnack(this.i18n.t('salespoints.deleteError')),
     });
   }
 
@@ -227,23 +193,14 @@ export class SalesPointsComponent implements OnInit {
   }
 
   private initFiltering(): void {
-    this.dataSource.filterPredicate = (point, filter) => {
-      const text = filter.trim().toLowerCase();
-      return [
-        point.name,
-        point.zone,
-        point.adresse,
-        point.gpsLatitude,
-        point.gpsLongitude,
-        point.isActive ? 'نشط' : 'غير نشط',
-      ]
+    this.dataSource.filterPredicate = (point, filter) =>
+      [point.name, point.zone, point.adresse, point.gpsLatitude, point.gpsLongitude, point.isActive ? this.i18n.t('common.active') : this.i18n.t('common.inactive')]
         .join(' ')
         .toLowerCase()
-        .includes(text);
-    };
+        .includes(filter.trim().toLowerCase());
 
     this.filterForm.controls.search.valueChanges
-      .pipe( debounceTime(300),takeUntilDestroyed(this.destroyRef))
+      .pipe(debounceTime(300), takeUntilDestroyed(this.destroyRef))
       .subscribe((value) => {
         this.dataSource.filter = value.trim().toLowerCase();
         this.dataSource.paginator?.firstPage();
@@ -251,7 +208,7 @@ export class SalesPointsComponent implements OnInit {
   }
 
   private openSnack(message: string): void {
-    this.snackBar.open(message, 'إغلاق', {
+    this.snackBar.open(message, this.i18n.t('common.closeAction'), {
       duration: 2600,
       horizontalPosition: 'start',
       verticalPosition: 'top',

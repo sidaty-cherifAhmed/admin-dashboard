@@ -1,51 +1,59 @@
-<mat-card class="page" dir="rtl">
+<mat-card class="page" [attr.dir]="i18n.direction()">
   <div class="page-header">
     <div>
-      <h2>إدارة أعضاء الفرق</h2>
-      <p>ربط المستخدمين بالفرق وتعديل الربط أو حذفه.</p>
+      <h2>{{ 'teamMembers.title' | t }}</h2>
+      <p>{{ 'teamMembers.description' | t }}</p>
     </div>
 
     <div class="header-actions">
       <mat-form-field appearance="outline" class="search">
         <mat-icon matPrefix>search</mat-icon>
-        <input matInput [formControl]="filterForm.controls.search" placeholder="بحث بالمستخدم أو الفريق" />
+        <input matInput [formControl]="filterForm.controls.search" [placeholder]="'teamMembers.searchPlaceholder' | t" />
       </mat-form-field>
 
       <button mat-flat-button color="primary" type="button" (click)="openCreateTeamMember()">
         <mat-icon>person_add</mat-icon>
-        ربط جديد
+        {{ 'teamMembers.new' | t }}
       </button>
     </div>
   </div>
 
   <mat-card class="editor" *ngIf="showForm">
-    <div class="editor-title">{{ isEditMode ? 'تعديل الربط' : 'إضافة عضو إلى فريق' }}</div>
+    <div class="editor-title">{{ isEditMode ? ('teamMembers.editTitle' | t) : ('teamMembers.createTitle' | t) }}</div>
 
     <form [formGroup]="teamMemberForm" (ngSubmit)="submitTeamMember()">
       <div class="form-grid">
         <mat-form-field appearance="outline">
-          <mat-label>المستخدم</mat-label>
-          <mat-select formControlName="userId">
-            <mat-option [value]="null" disabled>اختر المستخدم</mat-option>
+          <mat-label>{{ 'common.user' | t }}</mat-label>
+          <mat-select *ngIf="isEditMode; else createUsersSelect" formControlName="userId">
+            <mat-option [value]="null" disabled>{{ 'common.selectUser' | t }}</mat-option>
             <mat-option *ngFor="let user of users" [value]="user.userId">{{ user.fullName }}</mat-option>
           </mat-select>
-          <mat-error *ngIf="teamMemberForm.controls.userId.hasError('required')">المستخدم مطلوب</mat-error>
+          <ng-template #createUsersSelect>
+            <mat-select formControlName="userIds" multiple>
+              <mat-option *ngFor="let user of users" [value]="user.userId">{{ user.fullName }}</mat-option>
+            </mat-select>
+          </ng-template>
+          <mat-hint *ngIf="!isEditMode">{{ 'teamMembers.multipleUsersHint' | t }}</mat-hint>
+          <mat-error *ngIf="isEditMode ? teamMemberForm.controls.userId.hasError('required') : teamMemberForm.controls.userIds.hasError('required')">
+            {{ 'teamMembers.userRequired' | t }}
+          </mat-error>
         </mat-form-field>
 
         <mat-form-field appearance="outline">
-          <mat-label>الفريق</mat-label>
+          <mat-label>{{ 'common.team' | t }}</mat-label>
           <mat-select formControlName="teamId">
-            <mat-option [value]="null" disabled>اختر الفريق</mat-option>
+            <mat-option [value]="null" disabled>{{ 'common.selectTeam' | t }}</mat-option>
             <mat-option *ngFor="let team of teams" [value]="team.teamId">{{ team.teamName }}</mat-option>
           </mat-select>
-          <mat-error *ngIf="teamMemberForm.controls.teamId.hasError('required')">الفريق مطلوب</mat-error>
+          <mat-error *ngIf="teamMemberForm.controls.teamId.hasError('required')">{{ 'teamMembers.teamRequired' | t }}</mat-error>
         </mat-form-field>
       </div>
 
       <div class="buttons">
-        <button mat-button type="button" (click)="closeForm()">إلغاء</button>
+        <button mat-button type="button" (click)="closeForm()">{{ 'common.cancel' | t }}</button>
         <button mat-flat-button color="primary" type="submit" [disabled]="submitting">
-          {{ submitting ? 'جاري الحفظ...' : (isEditMode ? 'حفظ التعديل' : 'إنشاء الربط') }}
+          {{ submitting ? ('common.saving' | t) : ('teamMembers.createSubmit' | t) }}
         </button>
       </div>
     </form>
@@ -54,32 +62,32 @@
   <div class="table-wrap mat-elevation-z2" *ngIf="!loading; else loadingBlock">
     <table mat-table [dataSource]="dataSource" matSort>
       <ng-container matColumnDef="user">
-        <th mat-header-cell *matHeaderCellDef mat-sort-header>المستخدم</th>
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>{{ 'common.user' | t }}</th>
         <td mat-cell *matCellDef="let teamMember">
           <div class="name-cell">
             <div class="avatar">{{ userLabel(teamMember).slice(0, 1) }}</div>
             <div>
               <div class="name">{{ userLabel(teamMember) }}</div>
-              <div class="sub">{{ userSubLabel(teamMember) || ('ID: ' + teamMember.userId) }}</div>
+              <div class="sub">{{ userSubLabel(teamMember) || (('teamMembers.idPrefix' | t) + ': ' + teamMember.userId) }}</div>
             </div>
           </div>
         </td>
       </ng-container>
 
       <ng-container matColumnDef="team">
-        <th mat-header-cell *matHeaderCellDef mat-sort-header>الفريق</th>
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>{{ 'common.team' | t }}</th>
         <td mat-cell *matCellDef="let teamMember">
           <span class="assignment-pill">{{ teamLabel(teamMember) }}</span>
         </td>
       </ng-container>
 
       <ng-container matColumnDef="actions">
-        <th mat-header-cell *matHeaderCellDef>إجراءات</th>
+        <th mat-header-cell *matHeaderCellDef>{{ 'common.actions' | t }}</th>
         <td mat-cell *matCellDef="let teamMember" class="actions-cell">
-          <button mat-icon-button color="primary" matTooltip="تعديل" type="button" (click)="openEditTeamMember(teamMember)">
+          <button mat-icon-button color="primary" [matTooltip]="'common.edit' | t" type="button" (click)="openEditTeamMember(teamMember)">
             <mat-icon>edit</mat-icon>
           </button>
-          <button mat-icon-button color="warn" matTooltip="حذف" type="button" (click)="deleteTeamMember(teamMember.teamMemberId)">
+          <button mat-icon-button color="warn" [matTooltip]="'common.delete' | t" type="button" (click)="deleteTeamMember(teamMember.teamMemberId)">
             <mat-icon>delete</mat-icon>
           </button>
         </td>
@@ -89,13 +97,13 @@
       <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
 
       <tr class="empty" *ngIf="dataSource.data.length === 0">
-        <td [attr.colspan]="displayedColumns.length">لا توجد روابط حالياً</td>
+        <td [attr.colspan]="displayedColumns.length">{{ 'teamMembers.empty' | t }}</td>
       </tr>
     </table>
   </div>
 
   <ng-template #loadingBlock>
-    <div class="loading">جاري تحميل أعضاء الفرق...</div>
+    <div class="loading">{{ 'teamMembers.loading' | t }}</div>
   </ng-template>
 
   <mat-paginator [pageSizeOptions]="[5, 10, 20, 50]" [pageSize]="10" showFirstLastButtons></mat-paginator>

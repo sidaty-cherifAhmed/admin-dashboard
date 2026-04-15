@@ -1,29 +1,46 @@
-<div class="login-page" dir="rtl">
+<div class="login-page" [attr.dir]="i18n.direction()">
+
+  <div class="login-language-switcher" [attr.aria-label]="'common.language' | t">
+    <button
+      *ngFor="let language of languages"
+      mat-stroked-button
+      type="button"
+      [class.active]="i18n.language() === language"
+      (click)="setLanguage(language)"
+    >
+      {{ ('common.' + (language === 'en' ? 'english' : language === 'fr' ? 'french' : 'arabic')) | t }}
+    </button>
+  </div>
+
   <mat-card class="login-card">
+
     <div class="head">
       <div class="logo">AD</div>
       <div>
-        <h1>تسجيل الدخول</h1>
-        <p>أدخل بياناتك للوصول إلى لوحة الإدارة</p>
+        <h1>{{ 'login.title' | t }}</h1>
+        <p>{{ 'login.subtitle' | t }}</p>
       </div>
     </div>
 
     <form [formGroup]="form" (ngSubmit)="submit()" class="login-form">
+      
       <mat-form-field appearance="outline">
-        <mat-label>البريد الإلكتروني</mat-label>
+        <mat-label>{{ 'common.email' | t }}</mat-label>
         <input matInput type="email" formControlName="email" />
         <mat-icon matSuffix>mail</mat-icon>
       </mat-form-field>
 
       <mat-form-field appearance="outline">
-        <mat-label>كلمة المرور</mat-label>
+        <mat-label>{{ 'common.password' | t }}</mat-label>
         <input matInput type="password" formControlName="password" />
         <mat-icon matSuffix>lock</mat-icon>
       </mat-form-field>
 
       <button mat-flat-button type="submit" color="primary" [disabled]="submitting">
-        {{ submitting ? 'جاري تسجيل الدخول...' : 'تسجيل الدخول' }}
+        {{ submitting ? ('login.submitting' | t) : ('login.submit' | t) }}
       </button>
     </form>
   </mat-card>
+
+
 </div>

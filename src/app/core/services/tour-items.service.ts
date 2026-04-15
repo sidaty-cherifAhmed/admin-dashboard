@@ -40,6 +40,10 @@ export class TourItemsService {
     return this.http.put<TourItem>(`${this.api}/${id}`, data);
   }
 
+  updateNote(id: number, note: string): Observable<unknown> {
+    return this.http.put(`${this.api}/${id}/note`, { note });
+  }
+
   delete(id: number): Observable<void> {
     return this.http.delete<void>(`${this.api}/${id}`);
   }

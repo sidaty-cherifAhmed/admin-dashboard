@@ -2,23 +2,24 @@ import { CommonModule } from '@angular/common';
 import { Component, DestroyRef, OnInit, ViewChild, inject } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { debounceTime, finalize, forkJoin, of, switchMap } from 'rxjs';
-
-import { MatTableDataSource, MatTableModule } from '@angular/material/table';
-import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
-import { MatSort, MatSortModule } from '@angular/material/sort';
-import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
-import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatCardModule } from '@angular/material/card';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatIconModule } from '@angular/material/icon';
+import { MatInputModule } from '@angular/material/input';
+import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatSort, MatSortModule } from '@angular/material/sort';
+import { MatTableDataSource, MatTableModule } from '@angular/material/table';
+import { MatTooltipModule } from '@angular/material/tooltip';
+import { debounceTime, finalize, forkJoin, of, switchMap } from 'rxjs';
 
 import { TeamMember } from '../../core/models/team-member.model';
 import { Team, TeamPayload } from '../../core/models/team.model';
 import { TeamMembersService } from '../../core/services/team-members.service';
 import { TeamsService } from '../../core/services/teams.service';
+import { I18nService } from '../../core/services/i18n.service';
+import { TranslatePipe } from '../../shared/pipes/translate.pipe';
 
 @Component({
   selector: 'app-teams',
@@ -36,6 +37,7 @@ import { TeamsService } from '../../core/services/teams.service';
     MatTooltipModule,
     MatCardModule,
     MatSnackBarModule,
+    TranslatePipe,
   ],
   templateUrl: './teams.component.html',
   styleUrl: './teams.component.scss',
@@ -47,13 +49,11 @@ export class TeamsComponent implements OnInit {
   private readonly snackBar = inject(MatSnackBar);
   private readonly destroyRef = inject(DestroyRef);
 
+  readonly i18n = inject(I18nService);
   displayedColumns: string[] = ['teamName', 'actions'];
   dataSource = new MatTableDataSource<Team>([]);
 
-  readonly filterForm = this.fb.nonNullable.group({
-    search: [''],
-  });
-
+  readonly filterForm = this.fb.nonNullable.group({ search: [''] });
   readonly teamForm = this.fb.nonNullable.group({
     teamName: ['', [Validators.required, Validators.minLength(2)]],
   });
@@ -68,9 +68,7 @@ export class TeamsComponent implements OnInit {
 
   ngOnInit(): void {
     this.initFiltering();
-    queueMicrotask(() => {
-      this.loadTeams();
-    });
+    queueMicrotask(() => this.loadTeams());
   }
 
   get isEditMode(): boolean {
@@ -88,26 +86,20 @@ export class TeamsComponent implements OnInit {
           this.dataSource.paginator = this.paginator;
           this.dataSource.sort = this.sort;
         },
-        error: () => {
-          this.openSnack('فشل تحميل الفرق');
-        },
+        error: () => this.openSnack(this.i18n.t('teams.loadError')),
       });
   }
 
   openCreateTeam(): void {
     this.showForm = true;
     this.editingTeamId = null;
-    this.teamForm.reset({
-      teamName: '',
-    });
+    this.teamForm.reset({ teamName: '' });
   }
 
   openEditTeam(team: Team): void {
     this.showForm = true;
     this.editingTeamId = team.teamId;
-    this.teamForm.patchValue({
-      teamName: team.teamName,
-    });
+    this.teamForm.patchValue({ teamName: team.teamName });
   }
 
   closeForm(): void {
@@ -130,18 +122,16 @@ export class TeamsComponent implements OnInit {
 
     request$.pipe(finalize(() => (this.submitting = false))).subscribe({
       next: () => {
-        this.openSnack(this.isEditMode ? 'تم تعديل الفريق' : 'تم إنشاء الفريق');
+        this.openSnack(this.i18n.t(this.isEditMode ? 'teams.updateSuccess' : 'teams.createSuccess'));
         this.closeForm();
         this.loadTeams();
       },
-      error: () => {
-        this.openSnack(this.isEditMode ? 'فشل تعديل الفريق' : 'فشل إنشاء الفريق');
-      },
+      error: () => this.openSnack(this.i18n.t(this.isEditMode ? 'teams.updateError' : 'teams.createError')),
     });
   }
 
   deleteTeam(id: number): void {
-    if (!confirm('هل أنت متأكد من حذف هذا الفريق؟')) {
+    if (!confirm(this.i18n.t('teams.deleteConfirm'))) {
       return;
     }
 
@@ -153,32 +143,25 @@ export class TeamsComponent implements OnInit {
       )
       .subscribe({
         next: () => {
-          this.openSnack('تم حذف الفريق');
+          this.openSnack(this.i18n.t('teams.deleteSuccess'));
           this.loadTeams();
         },
-        error: () => {
-          this.openSnack('فشل حذف الفريق');
-        },
+        error: () => this.openSnack(this.i18n.t('teams.deleteError')),
       });
   }
 
   private deleteTeamMembersBeforeTeamDelete(id: number, teamMembers: TeamMember[]) {
     const linkedMembers = teamMembers.filter((teamMember) => teamMember.teamId === id);
-
     if (linkedMembers.length === 0) {
       return of(void 0);
     }
 
-    return forkJoin(
-      linkedMembers.map((teamMember) => this.teamMembersService.delete(teamMember.teamMemberId)),
-    );
+    return forkJoin(linkedMembers.map((teamMember) => this.teamMembersService.delete(teamMember.teamMemberId)));
   }
 
   private initFiltering(): void {
-    this.dataSource.filterPredicate = (team, filter) => {
-      const text = filter.trim().toLowerCase();
-      return team.teamName.toLowerCase().includes(text);
-    };
+    this.dataSource.filterPredicate = (team, filter) =>
+      team.teamName.toLowerCase().includes(filter.trim().toLowerCase());
 
     this.filterForm.controls.search.valueChanges
       .pipe(debounceTime(300), takeUntilDestroyed(this.destroyRef))
@@ -189,7 +172,7 @@ export class TeamsComponent implements OnInit {
   }
 
   private openSnack(message: string): void {
-    this.snackBar.open(message, 'إغلاق', {
+    this.snackBar.open(message, this.i18n.t('common.closeAction'), {
       duration: 2600,
       horizontalPosition: 'start',
       verticalPosition: 'top',

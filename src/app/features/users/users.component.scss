@@ -7,7 +7,7 @@
 .page-header {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
+  align-items: center;
   flex-wrap: wrap;
   gap: 14px;
   margin-bottom: 16px;
@@ -28,14 +28,25 @@
 
 .header-actions {
   display: flex;
-  gap: 10px;
+  gap: 12px;
   flex-wrap: wrap;
-  align-items: center;
+  align-items: flex-start;
+  justify-content: flex-end;
+
+  button {
+    min-height: 56px;
+    padding-inline: 18px;
+    white-space: nowrap;
+  }
 }
 
 .search {
   width: 360px;
   max-width: 90vw;
+
+  ::ng-deep .mat-mdc-form-field-subscript-wrapper {
+    display: none;
+  }
 }
 
 .editor {
@@ -80,16 +91,25 @@ table {
   width: 100%;
   min-width: 900px;
   background: #ffffff;
+  table-layout: fixed;
 }
 
 th {
   font-weight: 800;
   color: #0f172a;
   background: #f8fafc;
+  white-space: nowrap;
 }
 
 td {
   color: #0f172a;
+  vertical-align: middle;
+}
+
+th,
+td {
+  height: 64px;
+  padding-inline: 16px;
 }
 
 .mono {
@@ -100,6 +120,7 @@ td {
   display: flex;
   align-items: center;
   gap: 10px;
+  min-width: 0;
 }
 
 .avatar {
@@ -115,11 +136,17 @@ td {
 
 .name {
   font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .sub {
   color: #64748b;
   font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .role-pill {
@@ -136,6 +163,32 @@ td {
 .actions-cell {
   display: flex;
   gap: 4px;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.mat-column-fullName {
+  width: 28%;
+}
+
+.mat-column-email {
+  width: 24%;
+}
+
+.mat-column-phone {
+  width: 16%;
+}
+
+.mat-column-roleName {
+  width: 14%;
+}
+
+.mat-column-isActive {
+  width: 10%;
+}
+
+.mat-column-actions {
+  width: 96px;
 }
 
 .active-chip {
@@ -173,5 +226,14 @@ td {
 
   .search {
     width: 100%;
+    max-width: none;
+  }
+
+  .header-actions {
+    width: 100%;
+
+    button {
+      width: 100%;
+    }
   }
 }

@@ -1,142 +1,53 @@
-<mat-card class="page" dir="rtl">
+<mat-card class="page" [attr.dir]="i18n.direction()">
   <div class="page-header">
     <div>
-      <h2>إدارة نقاط البيع</h2>
-      <p>إضافة وتعديل وحذف والبحث داخل جميع نقاط البيع.</p>
+      <h2>{{ 'salespoints.title' | t }}</h2>
+      <p>{{ 'salespoints.description' | t }}</p>
     </div>
-
     <div class="header-actions">
       <mat-form-field appearance="outline" class="search">
         <mat-icon matPrefix>search</mat-icon>
-        <input matInput [formControl]="filterForm.controls.search" placeholder="بحث بالاسم أو المنطقة أو العنوان" />
+        <input matInput [formControl]="filterForm.controls.search" [placeholder]="'salespoints.searchPlaceholder' | t" />
       </mat-form-field>
-
       <button mat-flat-button color="primary" type="button" (click)="openCreateSalesPoint()">
         <mat-icon>store</mat-icon>
-        نقطة بيع جديدة
+        {{ 'salespoints.new' | t }}
       </button>
     </div>
   </div>
 
   <mat-card class="editor" *ngIf="showForm">
-    <div class="editor-title">{{ isEditMode ? 'تعديل نقطة البيع' : 'إضافة نقطة بيع جديدة' }}</div>
-
+    <div class="editor-title">{{ isEditMode ? ('salespoints.editTitle' | t) : ('salespoints.createTitle' | t) }}</div>
     <form [formGroup]="salesPointForm" (ngSubmit)="submitSalesPoint()">
       <div class="form-grid">
-        <mat-form-field appearance="outline">
-          <mat-label>الاسم</mat-label>
-          <input matInput formControlName="name" />
-          <mat-error *ngIf="salesPointForm.controls.name.hasError('required')">الاسم مطلوب</mat-error>
-        </mat-form-field>
-
-        <mat-form-field appearance="outline">
-          <mat-label>العنوان</mat-label>
-          <input matInput formControlName="adresse" />
-          <mat-error *ngIf="salesPointForm.controls.adresse.hasError('required')">العنوان مطلوب</mat-error>
-        </mat-form-field>
-
-        <mat-form-field appearance="outline">
-          <mat-label>المنطقة</mat-label>
-          <input matInput formControlName="zone" />
-          <mat-error *ngIf="salesPointForm.controls.zone.hasError('required')">المنطقة مطلوبة</mat-error>
-        </mat-form-field>
-
-        <mat-form-field appearance="outline">
-          <mat-label>خط العرض (Latitude)</mat-label>
-          <input matInput type="number" step="0.000001" formControlName="gpsLatitude" />
-          <mat-error *ngIf="salesPointForm.controls.gpsLatitude.hasError('required')">خط العرض مطلوب</mat-error>
-          <mat-error *ngIf="salesPointForm.controls.gpsLatitude.hasError('min') || salesPointForm.controls.gpsLatitude.hasError('max')">
-            القيمة يجب أن تكون بين -90 و 90
-          </mat-error>
-        </mat-form-field>
-
-        <mat-form-field appearance="outline">
-          <mat-label>خط الطول (Longitude)</mat-label>
-          <input matInput type="number" step="0.000001" formControlName="gpsLongitude" />
-          <mat-error *ngIf="salesPointForm.controls.gpsLongitude.hasError('required')">خط الطول مطلوب</mat-error>
-          <mat-error *ngIf="salesPointForm.controls.gpsLongitude.hasError('min') || salesPointForm.controls.gpsLongitude.hasError('max')">
-            القيمة يجب أن تكون بين -180 و 180
-          </mat-error>
-        </mat-form-field>
-
-        <div class="location-action">
-          <button mat-stroked-button type="button" color="primary" (click)="fillCurrentCoordinates()" [disabled]="locating">
-            <mat-icon>my_location</mat-icon>
-            {{ locating ? 'جارٍ تحديد الموقع...' : 'أخذ الإحداثيات الحالية' }}
-          </button>
-        </div>
+        <mat-form-field appearance="outline"><mat-label>{{ 'common.name' | t }}</mat-label><input matInput formControlName="name" /><mat-error *ngIf="salesPointForm.controls.name.hasError('required')">{{ 'salespoints.nameRequired' | t }}</mat-error></mat-form-field>
+        <mat-form-field appearance="outline"><mat-label>{{ 'common.address' | t }}</mat-label><input matInput formControlName="adresse" /><mat-error *ngIf="salesPointForm.controls.adresse.hasError('required')">{{ 'salespoints.addressRequired' | t }}</mat-error></mat-form-field>
+        <mat-form-field appearance="outline"><mat-label>{{ 'common.zone' | t }}</mat-label><input matInput formControlName="zone" /><mat-error *ngIf="salesPointForm.controls.zone.hasError('required')">{{ 'salespoints.zoneRequired' | t }}</mat-error></mat-form-field>
+        <mat-form-field appearance="outline"><mat-label>{{ 'salespoints.latitude' | t }} (Latitude)</mat-label><input matInput type="number" step="0.000001" formControlName="gpsLatitude" /><mat-error *ngIf="salesPointForm.controls.gpsLatitude.hasError('required')">{{ 'salespoints.latitudeRequired' | t }}</mat-error><mat-error *ngIf="salesPointForm.controls.gpsLatitude.hasError('min') || salesPointForm.controls.gpsLatitude.hasError('max')">{{ 'salespoints.latitudeRange' | t }}</mat-error></mat-form-field>
+        <mat-form-field appearance="outline"><mat-label>{{ 'salespoints.longitude' | t }} (Longitude)</mat-label><input matInput type="number" step="0.000001" formControlName="gpsLongitude" /><mat-error *ngIf="salesPointForm.controls.gpsLongitude.hasError('required')">{{ 'salespoints.longitudeRequired' | t }}</mat-error><mat-error *ngIf="salesPointForm.controls.gpsLongitude.hasError('min') || salesPointForm.controls.gpsLongitude.hasError('max')">{{ 'salespoints.longitudeRange' | t }}</mat-error></mat-form-field>
+        <div class="location-action"><button mat-stroked-button type="button" color="primary" (click)="fillCurrentCoordinates()" [disabled]="locating"><mat-icon>my_location</mat-icon>{{ locating ? ('salespoints.locating' | t) : ('salespoints.fillCoordinates' | t) }}</button></div>
       </div>
-
       <div class="form-footer">
-        <mat-slide-toggle formControlName="isActive">نشط</mat-slide-toggle>
-
-        <div class="buttons">
-          <button mat-button type="button" (click)="closeForm()">إلغاء</button>
-          <button mat-flat-button color="primary" type="submit" [disabled]="submitting">
-            {{ submitting ? 'جاري الحفظ...' : (isEditMode ? 'حفظ التعديل' : 'إنشاء نقطة البيع') }}
-          </button>
-        </div>
+        <mat-slide-toggle formControlName="isActive">{{ 'salespoints.activeSalesPoint' | t }}</mat-slide-toggle>
+        <div class="buttons"><button mat-button type="button" (click)="closeForm()">{{ 'common.cancel' | t }}</button><button mat-flat-button color="primary" type="submit" [disabled]="submitting">{{ submitting ? ('common.saving' | t) : ('common.saveChanges' | t) }}</button></div>
       </div>
     </form>
   </mat-card>
 
   <div class="table-wrap mat-elevation-z2" *ngIf="!loading; else loadingBlock">
     <table mat-table [dataSource]="dataSource" matSort>
-      <ng-container matColumnDef="name">
-        <th mat-header-cell *matHeaderCellDef mat-sort-header>الاسم</th>
-        <td mat-cell *matCellDef="let point">{{ point.name }}</td>
-      </ng-container>
-
-      <ng-container matColumnDef="zone">
-        <th mat-header-cell *matHeaderCellDef mat-sort-header>المنطقة</th>
-        <td mat-cell *matCellDef="let point">{{ point.zone }}</td>
-      </ng-container>
-
-      <ng-container matColumnDef="adresse">
-        <th mat-header-cell *matHeaderCellDef mat-sort-header>العنوان</th>
-        <td mat-cell *matCellDef="let point">{{ point.adresse }}</td>
-      </ng-container>
-
-      <ng-container matColumnDef="coordinates">
-        <th mat-header-cell *matHeaderCellDef>الإحداثيات</th>
-        <td mat-cell *matCellDef="let point" class="mono">
-          {{ point.gpsLatitude }} , {{ point.gpsLongitude }}
-        </td>
-      </ng-container>
-
-      <ng-container matColumnDef="isActive">
-        <th mat-header-cell *matHeaderCellDef mat-sort-header>الحالة</th>
-        <td mat-cell *matCellDef="let point">
-          <span class="status-pill" [class.active]="point.isActive" [class.inactive]="!point.isActive">
-            {{ point.isActive ? 'نشط' : 'غير نشط' }}
-          </span>
-        </td>
-      </ng-container>
-
-      <ng-container matColumnDef="actions">
-        <th mat-header-cell *matHeaderCellDef>إجراءات</th>
-        <td mat-cell *matCellDef="let point" class="actions-cell">
-          <button mat-icon-button color="primary" matTooltip="تعديل" type="button" (click)="openEditSalesPoint(point)">
-            <mat-icon>edit</mat-icon>
-          </button>
-          <button mat-icon-button color="warn" matTooltip="حذف" type="button" (click)="deleteSalesPoint(point)">
-            <mat-icon>delete</mat-icon>
-          </button>
-        </td>
-      </ng-container>
-
+      <ng-container matColumnDef="name"><th mat-header-cell *matHeaderCellDef mat-sort-header>{{ 'common.name' | t }}</th><td mat-cell *matCellDef="let point">{{ point.name }}</td></ng-container>
+      <ng-container matColumnDef="zone"><th mat-header-cell *matHeaderCellDef mat-sort-header>{{ 'common.zone' | t }}</th><td mat-cell *matCellDef="let point">{{ point.zone }}</td></ng-container>
+      <ng-container matColumnDef="adresse"><th mat-header-cell *matHeaderCellDef mat-sort-header>{{ 'common.address' | t }}</th><td mat-cell *matCellDef="let point">{{ point.adresse }}</td></ng-container>
+      <ng-container matColumnDef="coordinates"><th mat-header-cell *matHeaderCellDef>{{ 'common.coordinates' | t }}</th><td mat-cell *matCellDef="let point" class="mono">{{ point.gpsLatitude }} , {{ point.gpsLongitude }}</td></ng-container>
+      <ng-container matColumnDef="isActive"><th mat-header-cell *matHeaderCellDef mat-sort-header>{{ 'common.status' | t }}</th><td mat-cell *matCellDef="let point"><span class="status-pill" [class.active]="point.isActive" [class.inactive]="!point.isActive">{{ point.isActive ? ('common.active' | t) : ('common.inactive' | t) }}</span></td></ng-container>
+      <ng-container matColumnDef="actions"><th mat-header-cell *matHeaderCellDef>{{ 'common.actions' | t }}</th><td mat-cell *matCellDef="let point" class="actions-cell"><button mat-icon-button color="primary" [matTooltip]="'common.edit' | t" type="button" (click)="openEditSalesPoint(point)"><mat-icon>edit</mat-icon></button><button mat-icon-button color="warn" [matTooltip]="'common.delete' | t" type="button" (click)="deleteSalesPoint(point)"><mat-icon>delete</mat-icon></button></td></ng-container>
       <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
       <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
-
-      <tr class="empty" *ngIf="dataSource.data.length === 0">
-        <td [attr.colspan]="displayedColumns.length">لا توجد نقاط بيع حالياً</td>
-      </tr>
+      <tr class="empty" *ngIf="dataSource.data.length === 0"><td [attr.colspan]="displayedColumns.length">{{ 'salespoints.empty' | t }}</td></tr>
     </table>
   </div>
 
-  <ng-template #loadingBlock>
-    <div class="loading">جاري تحميل نقاط البيع...</div>
-  </ng-template>
-
+  <ng-template #loadingBlock><div class="loading">{{ 'salespoints.loading' | t }}</div></ng-template>
   <mat-paginator [pageSizeOptions]="[5, 10, 20, 50]" [pageSize]="10" showFirstLastButtons></mat-paginator>
 </mat-card>

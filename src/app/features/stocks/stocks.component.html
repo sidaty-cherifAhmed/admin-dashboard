@@ -1,96 +1,43 @@
-<mat-card class="page" dir="rtl">
+<mat-card class="page" [attr.dir]="i18n.direction()">
   <div class="page-header">
     <div>
-      <h2>إدارة المخزون</h2>
-      <p>إضافة وتعديل وحذف والبحث داخل سجلات المخزون.</p>
+      <h2>{{ 'stocks.title' | t }}</h2>
+      <p>{{ 'stocks.description' | t }}</p>
     </div>
-
     <div class="header-actions">
       <mat-form-field appearance="outline" class="search">
         <mat-icon matPrefix>search</mat-icon>
-        <input matInput [formControl]="filterForm.controls.search" placeholder="بحث بالمنتج أو الكمية" />
+        <input matInput [formControl]="filterForm.controls.search" [placeholder]="'stocks.searchPlaceholder' | t" />
       </mat-form-field>
-
       <button mat-flat-button color="primary" type="button" (click)="openCreateStock()">
         <mat-icon>add</mat-icon>
-        سجل مخزون جديد
+        {{ 'stocks.new' | t }}
       </button>
     </div>
   </div>
 
   <mat-card class="editor" *ngIf="showForm">
-    <div class="editor-title">{{ isEditMode ? 'تعديل سجل المخزون' : 'إضافة سجل مخزون جديد' }}</div>
-
+    <div class="editor-title">{{ isEditMode ? ('stocks.editTitle' | t) : ('stocks.createTitle' | t) }}</div>
     <form [formGroup]="stockForm" (ngSubmit)="submitStock()">
       <div class="form-grid">
-        <mat-form-field appearance="outline">
-          <mat-label>المنتج</mat-label>
-          <mat-select formControlName="productId">
-            <mat-option [value]="0" disabled>اختر المنتج</mat-option>
-            <mat-option *ngFor="let product of products" [value]="product.productId ?? product.id">
-              {{ product.productName }} ({{ product.productCode }})
-            </mat-option>
-          </mat-select>
-          <mat-error *ngIf="stockForm.controls.productId.hasError('required') || stockForm.controls.productId.hasError('min')">
-            المنتج مطلوب
-          </mat-error>
-        </mat-form-field>
-
-        <mat-form-field appearance="outline">
-          <mat-label>الكمية</mat-label>
-          <input matInput type="number" min="0" step="1" formControlName="quantity" />
-          <mat-error *ngIf="stockForm.controls.quantity.hasError('required')">الكمية مطلوبة</mat-error>
-          <mat-error *ngIf="stockForm.controls.quantity.hasError('min')">الكمية لا يمكن أن تكون سالبة</mat-error>
-        </mat-form-field>
+        <mat-form-field appearance="outline"><mat-label>{{ 'common.product' | t }}</mat-label><mat-select formControlName="productId"><mat-option [value]="0" disabled>{{ 'common.selectProduct' | t }}</mat-option><mat-option *ngFor="let product of products" [value]="product.productId ?? product.id">{{ product.productName }} ({{ product.productCode }})</mat-option></mat-select><mat-error *ngIf="stockForm.controls.productId.hasError('required') || stockForm.controls.productId.hasError('min')">{{ 'stocks.productRequired' | t }}</mat-error></mat-form-field>
+        <mat-form-field appearance="outline"><mat-label>{{ 'common.quantity' | t }}</mat-label><input matInput type="number" min="0" step="1" formControlName="quantity" /><mat-error *ngIf="stockForm.controls.quantity.hasError('required')">{{ 'stocks.quantityRequired' | t }}</mat-error><mat-error *ngIf="stockForm.controls.quantity.hasError('min')">{{ 'stocks.quantityMin' | t }}</mat-error></mat-form-field>
       </div>
-
-      <div class="buttons">
-        <button mat-button type="button" (click)="closeForm()">إلغاء</button>
-        <button mat-flat-button color="primary" type="submit" [disabled]="submitting">
-          {{ submitting ? 'جاري الحفظ...' : (isEditMode ? 'حفظ التعديل' : 'إنشاء السجل') }}
-        </button>
-      </div>
+      <div class="buttons"><button mat-button type="button" (click)="closeForm()">{{ 'common.cancel' | t }}</button><button mat-flat-button color="primary" type="submit" [disabled]="submitting">{{ submitting ? ('common.saving' | t) : ('common.saveChanges' | t) }}</button></div>
     </form>
   </mat-card>
 
   <div class="table-wrap mat-elevation-z2" *ngIf="!loading; else loadingBlock">
     <table mat-table [dataSource]="dataSource" matSort>
-      <ng-container matColumnDef="productName">
-        <th mat-header-cell *matHeaderCellDef mat-sort-header>المنتج</th>
-        <td mat-cell *matCellDef="let stock">{{ productName(stock) }}</td>
-      </ng-container>
-
-      <ng-container matColumnDef="quantity">
-        <th mat-header-cell *matHeaderCellDef mat-sort-header>الكمية</th>
-        <td mat-cell *matCellDef="let stock">
-          <span class="qty-badge">{{ stock.quantity }}</span>
-        </td>
-      </ng-container>
-
-      <ng-container matColumnDef="actions">
-        <th mat-header-cell *matHeaderCellDef>إجراءات</th>
-        <td mat-cell *matCellDef="let stock" class="actions-cell">
-          <button mat-icon-button color="primary" matTooltip="تعديل" type="button" (click)="openEditStock(stock)">
-            <mat-icon>edit</mat-icon>
-          </button>
-          <button mat-icon-button color="warn" matTooltip="حذف" type="button" (click)="deleteStock(stock)">
-            <mat-icon>delete</mat-icon>
-          </button>
-        </td>
-      </ng-container>
-
+      <ng-container matColumnDef="productName"><th mat-header-cell *matHeaderCellDef mat-sort-header>{{ 'common.product' | t }}</th><td mat-cell *matCellDef="let stock">{{ productName(stock) }}</td></ng-container>
+      <ng-container matColumnDef="quantity"><th mat-header-cell *matHeaderCellDef mat-sort-header>{{ 'common.quantity' | t }}</th><td mat-cell *matCellDef="let stock"><span class="qty-badge">{{ stock.quantity }}</span></td></ng-container>
+      <ng-container matColumnDef="actions"><th mat-header-cell *matHeaderCellDef>{{ 'common.actions' | t }}</th><td mat-cell *matCellDef="let stock" class="actions-cell"><button mat-icon-button color="primary" [matTooltip]="'common.edit' | t" type="button" (click)="openEditStock(stock)"><mat-icon>edit</mat-icon></button><button mat-icon-button color="warn" [matTooltip]="'common.delete' | t" type="button" (click)="deleteStock(stock)"><mat-icon>delete</mat-icon></button></td></ng-container>
       <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
       <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
-
-      <tr class="empty" *ngIf="dataSource.data.length === 0">
-        <td [attr.colspan]="displayedColumns.length">لا توجد سجلات مخزون حالياً</td>
-      </tr>
+      <tr class="empty" *ngIf="dataSource.data.length === 0"><td [attr.colspan]="displayedColumns.length">{{ 'stocks.empty' | t }}</td></tr>
     </table>
   </div>
 
-  <ng-template #loadingBlock>
-    <div class="loading">جاري تحميل المخزون...</div>
-  </ng-template>
-
+  <ng-template #loadingBlock><div class="loading">{{ 'stocks.loading' | t }}</div></ng-template>
   <mat-paginator [pageSizeOptions]="[5, 10, 20, 50]" [pageSize]="10" showFirstLastButtons></mat-paginator>
 </mat-card>

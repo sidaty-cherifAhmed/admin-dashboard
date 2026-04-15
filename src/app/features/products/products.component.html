@@ -1,130 +1,52 @@
-<mat-card class="page" dir="rtl">
+<mat-card class="page" [attr.dir]="i18n.direction()">
   <div class="page-header">
     <div>
-      <h2>إدارة المنتجات</h2>
-      <p>إضافة وتعديل وحذف والبحث داخل جميع المنتجات.</p>
+      <h2>{{ 'products.title' | t }}</h2>
+      <p>{{ 'products.description' | t }}</p>
     </div>
-
     <div class="header-actions">
       <mat-form-field appearance="outline" class="search">
         <mat-icon matPrefix>search</mat-icon>
-        <input matInput [formControl]="filterForm.controls.search" placeholder="بحث بالكود أو الاسم أو السعر أو التصنيف" />
+        <input matInput [formControl]="filterForm.controls.search" [placeholder]="'products.searchPlaceholder' | t" />
       </mat-form-field>
-
       <button mat-flat-button color="primary" type="button" (click)="openCreateProduct()">
         <mat-icon>add_box</mat-icon>
-        منتج جديد
+        {{ 'products.new' | t }}
       </button>
     </div>
   </div>
 
   <mat-card class="editor" *ngIf="showForm">
-    <div class="editor-title">{{ isEditMode ? 'تعديل المنتج' : 'إضافة منتج جديد' }}</div>
-
+    <div class="editor-title">{{ isEditMode ? ('products.editTitle' | t) : ('products.createTitle' | t) }}</div>
     <form [formGroup]="productForm" (ngSubmit)="submitProduct()">
       <div class="form-grid">
-        <mat-form-field appearance="outline">
-          <mat-label>كود المنتج</mat-label>
-          <input matInput formControlName="productCode" />
-          <mat-error *ngIf="productForm.controls.productCode.hasError('required')">كود المنتج مطلوب</mat-error>
-        </mat-form-field>
-
-        <mat-form-field appearance="outline">
-          <mat-label>اسم المنتج</mat-label>
-          <input matInput formControlName="productName" />
-          <mat-error *ngIf="productForm.controls.productName.hasError('required')">اسم المنتج مطلوب</mat-error>
-        </mat-form-field>
-
-        <mat-form-field appearance="outline">
-          <mat-label>سعر الوحدة</mat-label>
-          <input matInput type="number" min="0.01" step="0.01" formControlName="unitPrice" />
-          <mat-error *ngIf="productForm.controls.unitPrice.hasError('required')">السعر مطلوب</mat-error>
-          <mat-error *ngIf="productForm.controls.unitPrice.hasError('min')">يجب أن يكون السعر أكبر من صفر</mat-error>
-        </mat-form-field>
-
-        <mat-form-field appearance="outline">
-          <mat-label>تاريخ انتهاء الصلاحية</mat-label>
-          <input matInput type="date" formControlName="shelfLifeDate" />
-          <mat-error *ngIf="productForm.controls.shelfLifeDate.hasError('required')">التاريخ مطلوب</mat-error>
-        </mat-form-field>
-
-        <mat-form-field appearance="outline">
-          <mat-label>التصنيف</mat-label>
-          <mat-select formControlName="categoryId">
-            <mat-option [value]="0" disabled>اختر التصنيف</mat-option>
-            <mat-option *ngFor="let category of categories" [value]="category.categoryId">
-              {{ category.categoryName }}
-            </mat-option>
-          </mat-select>
-          <mat-error *ngIf="productForm.controls.categoryId.hasError('required') || productForm.controls.categoryId.hasError('min')">
-            التصنيف مطلوب
-          </mat-error>
-        </mat-form-field>
+        <mat-form-field appearance="outline"><mat-label>{{ 'products.productCode' | t }}</mat-label><input matInput formControlName="productCode" /><mat-error *ngIf="productForm.controls.productCode.hasError('required')">{{ 'products.productCodeRequired' | t }}</mat-error></mat-form-field>
+        <mat-form-field appearance="outline"><mat-label>{{ 'products.productName' | t }}</mat-label><input matInput formControlName="productName" /><mat-error *ngIf="productForm.controls.productName.hasError('required')">{{ 'products.productNameRequired' | t }}</mat-error></mat-form-field>
+        <mat-form-field appearance="outline"><mat-label>{{ 'products.unitPrice' | t }}</mat-label><input matInput type="number" min="0.01" step="0.01" formControlName="unitPrice" /><mat-error *ngIf="productForm.controls.unitPrice.hasError('required')">{{ 'products.unitPriceRequired' | t }}</mat-error><mat-error *ngIf="productForm.controls.unitPrice.hasError('min')">{{ 'products.unitPriceMin' | t }}</mat-error></mat-form-field>
+        <mat-form-field appearance="outline"><mat-label>{{ 'products.shelfLifeDate' | t }}</mat-label><input matInput type="date" formControlName="shelfLifeDate" /><mat-error *ngIf="productForm.controls.shelfLifeDate.hasError('required')">{{ 'products.shelfLifeDateRequired' | t }}</mat-error></mat-form-field>
+        <mat-form-field appearance="outline"><mat-label>{{ 'common.category' | t }}</mat-label><mat-select formControlName="categoryId"><mat-option [value]="0" disabled>{{ 'common.selectCategory' | t }}</mat-option><mat-option *ngFor="let category of categories" [value]="category.categoryId">{{ category.categoryName }}</mat-option></mat-select><mat-error *ngIf="productForm.controls.categoryId.hasError('required') || productForm.controls.categoryId.hasError('min')">{{ 'products.categoryRequired' | t }}</mat-error></mat-form-field>
       </div>
-
       <div class="buttons">
-        <button mat-button type="button" (click)="closeForm()">إلغاء</button>
-        <button mat-flat-button color="primary" type="submit" [disabled]="submitting">
-          {{ submitting ? 'جاري الحفظ...' : (isEditMode ? 'حفظ التعديل' : 'إنشاء المنتج') }}
-        </button>
+        <button mat-button type="button" (click)="closeForm()">{{ 'common.cancel' | t }}</button>
+        <button mat-flat-button color="primary" type="submit" [disabled]="submitting">{{ submitting ? ('common.saving' | t) : ('common.saveChanges' | t) }}</button>
       </div>
-      
     </form>
   </mat-card>
 
   <div class="table-wrap mat-elevation-z2" *ngIf="!loading; else loadingBlock">
     <table mat-table [dataSource]="dataSource" matSort>
-      <ng-container matColumnDef="productCode">
-        <th mat-header-cell *matHeaderCellDef mat-sort-header>الكود</th>
-        <td mat-cell *matCellDef="let product" class="mono">{{ product.productCode }}</td>
-      </ng-container>
-
-      <ng-container matColumnDef="productName">
-        <th mat-header-cell *matHeaderCellDef mat-sort-header>الاسم</th>
-        <td mat-cell *matCellDef="let product">{{ product.productName }}</td>
-      </ng-container>
-
-      <ng-container matColumnDef="unitPrice">
-        <th mat-header-cell *matHeaderCellDef mat-sort-header>السعر</th>
-        <td mat-cell *matCellDef="let product">{{ product.unitPrice | number:'1.2-2' }}</td>
-      </ng-container>
-
-      <ng-container matColumnDef="shelfLifeDate">
-        <th mat-header-cell *matHeaderCellDef mat-sort-header>الصلاحية</th>
-        <td mat-cell *matCellDef="let product">{{ product.shelfLifeDate | date:'yyyy-MM-dd' }}</td>
-      </ng-container>
-
-      <ng-container matColumnDef="categoryName">
-        <th mat-header-cell *matHeaderCellDef mat-sort-header>التصنيف</th>
-        <td mat-cell *matCellDef="let product">
-          <span class="category-badge">{{ product.categoryName || categoryNameById(product.categoryId) }}</span>
-        </td>
-      </ng-container>
-
-      <ng-container matColumnDef="actions">
-        <th mat-header-cell *matHeaderCellDef>إجراءات</th>
-        <td mat-cell *matCellDef="let product" class="actions-cell">
-          <button mat-icon-button color="primary" matTooltip="تعديل" type="button" (click)="openEditProduct(product)">
-            <mat-icon>edit</mat-icon>
-          </button>
-          <button mat-icon-button color="warn" matTooltip="حذف" type="button" (click)="deleteProduct(product)">
-            <mat-icon>delete</mat-icon>
-          </button>
-        </td>
-      </ng-container>
-
+      <ng-container matColumnDef="productCode"><th mat-header-cell *matHeaderCellDef mat-sort-header>{{ 'common.code' | t }}</th><td mat-cell *matCellDef="let product" class="mono">{{ product.productCode }}</td></ng-container>
+      <ng-container matColumnDef="productName"><th mat-header-cell *matHeaderCellDef mat-sort-header>{{ 'common.name' | t }}</th><td mat-cell *matCellDef="let product">{{ product.productName }}</td></ng-container>
+      <ng-container matColumnDef="unitPrice"><th mat-header-cell *matHeaderCellDef mat-sort-header>{{ 'products.unitPrice' | t }}</th><td mat-cell *matCellDef="let product">{{ product.unitPrice | number:'1.2-2' }}</td></ng-container>
+      <ng-container matColumnDef="shelfLifeDate"><th mat-header-cell *matHeaderCellDef mat-sort-header>{{ 'products.shelfLifeDate' | t }}</th><td mat-cell *matCellDef="let product">{{ product.shelfLifeDate | date:'yyyy-MM-dd' }}</td></ng-container>
+      <ng-container matColumnDef="categoryName"><th mat-header-cell *matHeaderCellDef mat-sort-header>{{ 'common.category' | t }}</th><td mat-cell *matCellDef="let product"><span class="category-badge">{{ product.categoryName || categoryNameById(product.categoryId) }}</span></td></ng-container>
+      <ng-container matColumnDef="actions"><th mat-header-cell *matHeaderCellDef>{{ 'common.actions' | t }}</th><td mat-cell *matCellDef="let product" class="actions-cell"><button mat-icon-button color="primary" [matTooltip]="'common.edit' | t" type="button" (click)="openEditProduct(product)"><mat-icon>edit</mat-icon></button><button mat-icon-button color="warn" [matTooltip]="'common.delete' | t" type="button" (click)="deleteProduct(product)"><mat-icon>delete</mat-icon></button></td></ng-container>
       <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
       <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
-
-      <tr class="empty" *ngIf="dataSource.data.length === 0">
-        <td [attr.colspan]="displayedColumns.length">لا توجد منتجات حالياً</td>
-      </tr>
+      <tr class="empty" *ngIf="dataSource.data.length === 0"><td [attr.colspan]="displayedColumns.length">{{ 'products.empty' | t }}</td></tr>
     </table>
   </div>
 
-  <ng-template #loadingBlock>
-    <div class="loading">جاري تحميل المنتجات...</div>
-  </ng-template>
-
+  <ng-template #loadingBlock><div class="loading">{{ 'products.loading' | t }}</div></ng-template>
   <mat-paginator [pageSizeOptions]="[5, 10, 20, 50]" [pageSize]="10" showFirstLastButtons></mat-paginator>
 </mat-card>

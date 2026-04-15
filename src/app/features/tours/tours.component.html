@@ -18,7 +18,7 @@
     </div>
   </div>
 
-  <mat-card class="editor" *ngIf="showForm">
+  <mat-card class="editor" *ngIf="showForm()">
     <div class="editor-title">{{ isEditMode ? 'تعديل الجولة والعناصر ونقاط البيع' : 'إضافة جولة جديدة مع العناصر ونقاط البيع' }}</div>
 
     <form [formGroup]="tourForm" (ngSubmit)="submitTour()">
@@ -33,7 +33,7 @@
           <mat-label>المركبة</mat-label>
           <mat-select formControlName="vehicleId">
             <mat-option [value]="0" disabled>اختر المركبة</mat-option>
-            <mat-option *ngFor="let vehicle of vehicles" [value]="vehicle.vehicleId ?? vehicle.id">
+            <mat-option *ngFor="let vehicle of vehicles()" [value]="vehicle.vehicleId ?? vehicle.id">
               {{ vehicle.vehicleCode }}
             </mat-option>
           </mat-select>
@@ -46,7 +46,7 @@
           <mat-label>الفريق</mat-label>
           <mat-select formControlName="teamId">
             <mat-option [value]="0" disabled>اختر الفريق</mat-option>
-            <mat-option *ngFor="let team of teams" [value]="team.teamId">
+            <mat-option *ngFor="let team of teams()" [value]="team.teamId">
               {{ team.teamName }}
             </mat-option>
           </mat-select>
@@ -68,8 +68,8 @@
         <mat-form-field appearance="outline">
           <mat-label>نقاط البيع</mat-label>
           <mat-select formControlName="salesPointIds" multiple>
-            <mat-option *ngFor="let point of salesPoints" [value]="point.salesPointId ?? point.id">
-              {{ point.name }} - {{ point.zone }}
+            <mat-option *ngFor="let point of salesPoints()" [value]="point.salesPointId ?? point.id">
+              {{ point.name }} 
             </mat-option>
           </mat-select>
           <mat-hint>يمكن اختيار أكثر من نقطة بيع</mat-hint>
@@ -99,7 +99,7 @@
               <mat-label>المنتج</mat-label>
               <mat-select formControlName="productId">
                 <mat-option [value]="0" disabled>اختر المنتج</mat-option>
-                <mat-option *ngFor="let product of products" [value]="product.productId">
+                <mat-option *ngFor="let product of products()" [value]="product.productId">
                   {{ product.productName }}
                 </mat-option>
               </mat-select>
@@ -141,18 +141,18 @@
         </div>
       </div>
 
-      <div class="form-error" *ngIf="duplicateProducts">لا يمكن تكرار نفس المنتج أكثر من مرة داخل الجولة نفسها.</div>
+      <div class="form-error" *ngIf="duplicateProducts()">لا يمكن تكرار نفس المنتج أكثر من مرة داخل الجولة نفسها.</div>
 
       <div class="buttons">
         <button mat-button type="button" (click)="closeForm()">إلغاء</button>
-        <button mat-flat-button color="primary" type="submit" [disabled]="submitting || duplicateProducts">
-          {{ submitting ? 'جاري الحفظ...' : (isEditMode ? 'حفظ التعديل' : 'إنشاء الجولة والعناصر') }}
+        <button mat-flat-button color="primary" type="submit" [disabled]="submitting() || duplicateProducts()">
+          {{ submitting() ? 'جاري الحفظ...' : (isEditMode ? 'حفظ التعديل' : 'إنشاء الجولة والعناصر') }}
         </button>
       </div>
     </form>
   </mat-card>
 
-  <div class="table-wrap mat-elevation-z2" *ngIf="!loading; else loadingBlock">
+  <div class="table-wrap mat-elevation-z2" *ngIf="!loading(); else loadingBlock">
     <table mat-table [dataSource]="dataSource" matSort>
       <ng-container matColumnDef="tourId">
         <th mat-header-cell *matHeaderCellDef mat-sort-header>رقم الجولة</th>
@@ -200,7 +200,7 @@
               {{ hasOpenDetails(tour) ? 'إخفاء' : 'عرض' }}
             </button>
 
-            <button mat-stroked-button color="primary" type="button" (click)="openEditTour(tour)">
+            <button mat-stroked-button color="primary" type="button" [disabled]="!canEditTour(tour)" (click)="openEditTour(tour)">
               <mat-icon>edit</mat-icon>
               تعديل
             </button>
@@ -222,7 +222,7 @@
     </table>
   </div>
 
-  <mat-card class="details-panel" *ngIf="selectedTour as tour">
+  <mat-card class="details-panel" *ngIf="selectedTour() as tour">
     <div class="details-header">
       <div>
         <h3>تفاصيل الجولة</h3>
@@ -262,12 +262,12 @@
     <div class="loading">جاري تحميل الجولات...</div>
   </ng-template>
 
-  <div class="modal-backdrop" *ngIf="salesPointsDialog" (click)="closeSalesPointsDialog()">
+  <div class="modal-backdrop" *ngIf="salesPointsDialog() as dialog" (click)="closeSalesPointsDialog()">
     <div class="modal-card" (click)="$event.stopPropagation()">
       <div class="modal-header">
         <div>
           <h3>تفاصيل نقاط البيع</h3>
-          <p>الجولة رقم {{ salesPointsDialog.tourId }}</p>
+          <p>الجولة رقم {{ dialog.tourId }}</p>
         </div>
 
         <button mat-icon-button type="button" (click)="closeSalesPointsDialog()">
@@ -275,7 +275,7 @@
         </button>
       </div>
 
-      <div class="detail-empty" *ngIf="salesPointsDialog.salesPoints.length === 0; else salesPointsTable">
+      <div class="detail-empty" *ngIf="dialog.salesPoints.length === 0; else salesPointsTable">
         لا توجد نقاط بيع مرتبطة بهذه الجولة.
       </div>
 
@@ -291,7 +291,7 @@
               </tr>
             </thead>
             <tbody>
-              <tr *ngFor="let point of salesPointsDialog.salesPoints">
+              <tr *ngFor="let point of dialog.salesPoints">
                 <td>{{ point.name }}</td>
                 <td>{{ point.adresse }}</td>
                 <td>{{ point.zone }}</td>

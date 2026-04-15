@@ -1,83 +1,110 @@
-﻿<div class="dashboard" dir="rtl">
+<div class="dashboard" [attr.dir]="i18n.direction()">
+  <div class="dashboard-glow dashboard-glow--left" aria-hidden="true"></div>
+  <div class="dashboard-glow dashboard-glow--right" aria-hidden="true"></div>
 
   <aside class="sidebar">
+    <div class="sidebar-panel">
 
-    <div class="brand">
-      <div class="brand-mark">AD</div>
-      <div>
-        <div class="brand-title">لوحة الإدارة</div>
+      <div class="brand">
+        <div class="brand-mark">AD</div>
+        <div>
+          <div class="brand-title">{{ 'common.appName' | t }}</div>
+          <div class="brand-sub">{{ 'common.controlPanel' | t }}</div>
+        </div>
+      </div>
+
+      <nav class="nav-links">
+        <a routerLink="/dashboard" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
+          <mat-icon>analytics</mat-icon>
+          <span>{{ 'layout.dashboard' | t }}</span>
+        </a>
+        <a routerLink="/users" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
+          <mat-icon>group</mat-icon>
+          <span>{{ 'layout.users' | t }}</span>
+        </a>
+        <a routerLink="/teams" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
+          <mat-icon>groups</mat-icon>
+          <span>{{ 'layout.teams' | t }}</span>
+        </a>
+        <a routerLink="/team-members" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
+          <mat-icon>hub</mat-icon>
+          <span>{{ 'layout.teamMembers' | t }}</span>
+        </a>
+        <a routerLink="/roles" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
+          <mat-icon>admin_panel_settings</mat-icon>
+          <span>{{ 'layout.roles' | t }}</span>
+        </a>
+        <a routerLink="/categories" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
+          <mat-icon>category</mat-icon>
+          <span>{{ 'layout.categories' | t }}</span>
+        </a>
+        <a routerLink="/products" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
+          <mat-icon>inventory_2</mat-icon>
+          <span>{{ 'layout.products' | t }}</span>
+        </a>
+        <a routerLink="/stocks" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
+          <mat-icon>warehouse</mat-icon>
+          <span>{{ 'layout.stocks' | t }}</span>
+        </a>
+        <a routerLink="/salespoints" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
+          <mat-icon>point_of_sale</mat-icon>
+          <span>{{ 'layout.salespoints' | t }}</span>
+        </a>
+        <a routerLink="/vehicles" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
+          <mat-icon>directions_car</mat-icon>
+          <span>{{ 'layout.vehicles' | t }}</span>
+        </a>
+        <a routerLink="/tours" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
+          <mat-icon>route</mat-icon>
+          <span>{{ 'layout.tours' | t }}</span>
+        </a>
+        <a routerLink="/live-tracking" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
+          <mat-icon>my_location</mat-icon>
+          <span>{{ 'layout.liveTracking' | t }}</span>
+        </a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="meta-card">
+          <span class="meta-label">{{ 'common.language' | t }}</span>
+          <strong>{{ ('common.' + (i18n.language() === 'en' ? 'english' : i18n.language() === 'fr' ? 'french' : 'arabic')) | t }}</strong>
+        </div>
       </div>
     </div>
-
-    <nav class="nav-links">
-      <a routerLink="/users" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
-        <mat-icon>group</mat-icon>
-        <span>إدارة المستخدمين</span>
-      </a>
-
-      <a routerLink="/teams" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
-        <mat-icon>groups</mat-icon>
-        <span>إدارة الفرق</span>
-      </a>
-
-      <a routerLink="/team-members" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
-        <mat-icon>hub</mat-icon>
-        <span>إدارة أعضاء الفرق</span>
-      </a>
-
-      <a routerLink="/roles" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
-        <mat-icon>admin_panel_settings</mat-icon>
-        <span>إدارة الأدوار</span>
-      </a>
-
-      <a routerLink="/categories" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
-        <mat-icon>category</mat-icon>
-        <span>إدارة التصنيفات</span>
-      </a>
-
-      <a routerLink="/products" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
-        <mat-icon>inventory_2</mat-icon>
-        <span>إدارة المنتجات</span>
-      </a>
-
-      <a routerLink="/stocks" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
-        <mat-icon>warehouse</mat-icon>
-        <span>إدارة المخزون</span>
-      </a>
-
-      <a routerLink="/salespoints" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
-        <mat-icon>point_of_sale</mat-icon>
-        <span>إدارة نقاط البيع</span>
-      </a>
-
-      <a routerLink="/vehicles" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
-        <mat-icon>directions_car</mat-icon>
-        <span>إدارة المركبات</span>
-      </a>
-
-      <a routerLink="/tours" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
-        <mat-icon>route</mat-icon>
-        <span>إدارة الجولات</span>
-      </a>
-      
-    </nav>
   </aside>
 
   <main class="main">
     <header class="topbar">
-      <div>
-        <h1>لوحة التحكم</h1>
+      <div class="topbar-copy">
+        <div class="eyebrow">{{ 'common.appName' | t }}</div>
+        <h1>{{ 'common.controlPanel' | t }}</h1>
       </div>
 
-      <button mat-stroked-button type="button" class="logout-btn" (click)="logout()">
-        <mat-icon>logout</mat-icon>
-        <span>تسجيل الخروج</span>
-      </button>
+      <div class="topbar-actions">
+        <div class="language-switcher" [attr.aria-label]="'common.language' | t">
+          <button
+            *ngFor="let language of languages"
+            mat-stroked-button
+            type="button"
+            [class.active]="i18n.language() === language"
+            (click)="setLanguage(language)"
+          >
+            {{ ('common.' + (language === 'en' ? 'english' : language === 'fr' ? 'french' : 'arabic')) | t }}
+          </button>
+        </div>
+
+        <button mat-stroked-button type="button" class="logout-btn" (click)="logout()">
+          <mat-icon>logout</mat-icon>
+          <span>{{ 'common.logout' | t }}</span>
+        </button>
+        
+      </div>
     </header>
 
     <section class="content">
-      <router-outlet></router-outlet>
+      <div class="content-shell">
+        <router-outlet></router-outlet>
+      </div>
     </section>
   </main>
-
 </div>

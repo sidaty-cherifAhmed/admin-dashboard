@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { AdminLayoutComponent } from './layouts/admin-layout/admin-layout.component';
+import { DashboardComponent } from './features/dashboard/dashboard.component';
 import { UsersComponent } from './features/users/users.component';
 import { RolesComponent } from './features/roles/roles.component';
 import { CategoriesComponent } from './features/categories/categories.component';
@@ -22,6 +23,7 @@ export const routes: Routes = [
     canActivateChild: [authChildGuard],
 
     children: [
+      { path: 'dashboard', component: DashboardComponent },
       { path: 'users', component: UsersComponent },
       { path: 'roles', component: RolesComponent },
       { path: 'categories', component: CategoriesComponent },
@@ -32,7 +34,12 @@ export const routes: Routes = [
       { path: 'teams', component: TeamsComponent },
       { path: 'team-members', component: TeamMembersComponent },
       { path: 'tours', component: ToursComponent },
-      { path: '', redirectTo: 'users', pathMatch: 'full' },
+      {
+        path: 'live-tracking',
+        loadComponent: () =>
+          import('./features/live-tracking/live-tracking.component').then((m) => m.LiveTrackingComponent),
+      },
+      { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
     ],
 
   },

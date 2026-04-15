@@ -1,0 +1,147 @@
+.summary-page {
+  display: grid;
+  gap: 18px;
+  padding: 22px;
+  border: 1px solid var(--surface-stroke);
+  border-radius: var(--radius-lg);
+  background: var(--bg-surface);
+  box-shadow: var(--shadow-card);
+}
+
+.page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+
+  h2 {
+    margin: 0;
+    color: var(--text-main);
+    font-size: 26px;
+    font-weight: 800;
+  }
+
+  p {
+    margin: 6px 0 0;
+    color: var(--text-muted);
+    font-weight: 600;
+  }
+
+  button {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.stat-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 132px;
+  padding: 20px;
+  border: 1px solid #e2e8f0;
+  border-radius: 18px;
+  background: #ffffff;
+  box-shadow: 0 14px 30px rgba(49, 31, 16, 0.08);
+}
+
+.icon-wrap {
+  width: 54px;
+  height: 54px;
+  flex: 0 0 54px;
+  display: grid;
+  place-items: center;
+  border-radius: 16px;
+
+  mat-icon {
+    width: 28px;
+    height: 28px;
+    font-size: 28px;
+  }
+}
+
+.stat-value {
+  color: #0f172a;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 34px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.stat-label {
+  margin-top: 8px;
+  color: #64748b;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.tone-users .icon-wrap {
+  color: #075985;
+  background: #e0f2fe;
+}
+
+.tone-vehicles .icon-wrap {
+  color: #166534;
+  background: #dcfce7;
+}
+
+.tone-salespoints .icon-wrap {
+  color: #9a3412;
+  background: #ffedd5;
+}
+
+.tone-teams .icon-wrap {
+  color: #5b21b6;
+  background: #ede9fe;
+}
+
+.state {
+  min-height: 132px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border-radius: 18px;
+  font-weight: 800;
+}
+
+.loading {
+  border: 1px dashed #93c5fd;
+  color: #1e40af;
+  background: #eff6ff;
+}
+
+.error {
+  border: 1px dashed #fca5a5;
+  color: #991b1b;
+  background: #fef2f2;
+}
+
+@media (max-width: 1180px) {
+  .stats-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .summary-page {
+    padding: 16px;
+    border-radius: 20px;
+  }
+
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .stat-card {
+    min-height: 112px;
+  }
+}

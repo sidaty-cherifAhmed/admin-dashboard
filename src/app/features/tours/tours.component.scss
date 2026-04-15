@@ -38,8 +38,9 @@
   max-width: 90vw;
 }
 
-.editor {
-  margin-bottom: 16px;
+.editor,
+.details-panel {
+  margin-top: 16px;
   border: 1px solid #dbeafe;
   border-radius: 16px;
 }
@@ -55,6 +56,10 @@
   grid-template-columns: repeat(3, minmax(180px, 1fr));
   gap: 12px;
   margin-bottom: 16px;
+}
+
+.sales-points-field {
+  grid-column: span 2;
 }
 
 .items-header {
@@ -97,8 +102,12 @@
 
 .item-grid {
   display: grid;
-  grid-template-columns: minmax(220px, 1fr) minmax(160px, 220px);
+  grid-template-columns: minmax(220px, 1fr) minmax(160px, 220px) minmax(220px, 1fr);
   gap: 12px;
+}
+
+.note-field {
+  grid-column: span 1;
 }
 
 .form-error {
@@ -117,19 +126,6 @@
   gap: 8px;
 }
 
-.row-actions {
-  display: flex;
-  align-items: flex-start;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.sales-points-cell {
-  display: grid;
-  gap: 8px;
-  justify-items: start;
-}
-
 .table-wrap {
   border-radius: 16px;
   overflow: auto;
@@ -138,7 +134,7 @@
 
 table {
   width: 100%;
-  min-width: 760px;
+  min-width: 900px;
   background: #ffffff;
 }
 
@@ -152,17 +148,34 @@ th {
   font-family: 'Consolas', 'Courier New', monospace;
 }
 
+.sales-points-cell {
+  display: grid;
+  gap: 4px;
+}
+
+.sales-points-text {
+  color: #334155;
+  font-weight: 700;
+}
+
+.sales-points-meta {
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.row-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+
 .empty td {
   text-align: center;
   padding: 18px;
   color: #64748b;
   font-weight: 600;
-}
-
-.details-panel {
-  margin-top: 16px;
-  border: 1px solid #dbeafe;
-  border-radius: 16px;
 }
 
 .details-header {
@@ -186,21 +199,46 @@ th {
   }
 }
 
-.details-actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
+.detail-grid {
+  display: grid;
+  grid-template-columns: minmax(280px, 360px) minmax(0, 1fr);
+  gap: 16px;
 }
 
-.car-chip {
-  display: inline-flex;
-  align-items: center;
-  padding: 8px 12px;
-  border-radius: 999px;
-  background: #dbeafe;
-  color: #1d4ed8;
+.detail-section {
+  display: grid;
+  gap: 12px;
+
+  h4 {
+    margin: 0;
+    color: #0f172a;
+    font-size: 15px;
+    font-weight: 800;
+  }
+}
+
+.sales-point-list {
+  display: grid;
+  gap: 10px;
+}
+
+.sales-point-card {
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #f8fafc;
+  padding: 12px;
+}
+
+.sales-point-name {
+  color: #0f172a;
   font-weight: 800;
+}
+
+.sales-point-meta {
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 600;
+  margin-top: 4px;
 }
 
 .details-table-wrap {
@@ -231,13 +269,22 @@ th {
   }
 }
 
-.detail-empty {
+.detail-empty,
+.loading {
   padding: 14px;
   border-radius: 12px;
   background: #f8fafc;
   color: #64748b;
   font-weight: 600;
   text-align: center;
+}
+
+.loading {
+  border: 1px dashed #93c5fd;
+  color: #1e40af;
+  border-radius: 16px;
+  padding: 20px;
+  font-weight: 700;
 }
 
 .item-note {
@@ -248,67 +295,19 @@ th {
   color: #94a3b8;
 }
 
-.loading {
-  border: 1px dashed #93c5fd;
-  color: #1e40af;
-  border-radius: 16px;
-  padding: 20px;
-  text-align: center;
-  font-weight: 700;
-}
-
-.modal-backdrop {
-  position: fixed;
-  inset: 0;
-  background: rgba(15, 23, 42, 0.55);
-  display: grid;
-  place-items: center;
-  padding: 24px;
-  z-index: 1000;
-}
-
-.modal-card {
-  width: min(920px, 100%);
-  max-height: 85vh;
-  overflow: auto;
-  background: #ffffff;
-  border-radius: 24px;
-  border: 1px solid #dbeafe;
-  box-shadow: 0 24px 80px rgba(15, 23, 42, 0.2);
-  padding: 20px;
-}
-
-.modal-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 16px;
-
-  h3 {
-    margin: 0;
-    font-size: 20px;
-    font-weight: 800;
-    color: #0f172a;
-  }
-
-  p {
-    margin: 6px 0 0;
-    color: #64748b;
-    font-weight: 600;
-  }
-}
-
-.modal-table {
-  min-width: 640px;
-}
-
-@media (max-width: 900px) {
+@media (max-width: 1100px) {
   .form-grid,
-  .item-grid {
+  .item-grid,
+  .detail-grid {
     grid-template-columns: 1fr;
   }
 
+  .sales-points-field {
+    grid-column: span 1;
+  }
+}
+
+@media (max-width: 900px) {
   .items-header,
   .item-row {
     grid-template-columns: 1fr;
@@ -316,23 +315,5 @@ th {
 
   .search {
     width: 100%;
-  }
-
-  .details-header {
-    align-items: flex-start;
-    flex-direction: column;
-  }
-
-  .details-actions {
-    width: 100%;
-  }
-
-  .modal-backdrop {
-    padding: 12px;
-  }
-
-  .modal-card {
-    padding: 14px;
-    border-radius: 18px;
   }
 }

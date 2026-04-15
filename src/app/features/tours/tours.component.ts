@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, DestroyRef, OnInit, ViewChild, inject } from '@angular/core';
+import { Component, DestroyRef, OnInit, ViewChild, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormArray, FormBuilder, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -122,19 +122,29 @@ export class ToursComponent implements OnInit {
     items: this.fb.nonNullable.array([this.createTourItemGroup()]),
   });
 
-  vehicles: Vehicle[] = [];
-  teams: Team[] = [];
-  products: WarehouseProductOption[] = [];
-  salesPoints: SalesPoint[] = [];
-  productStockQuantities: Record<number, number> = {};
-  loading = true;
-  submitting = false;
-  showForm = false;
-  duplicateProducts = false;
-  selectedTourId: number | null = null;
-  editingTourId: number | null = null;
-  salesPointsDialog: SalesPointsDialogState | null = null;
-  loadedItemNotes: Record<number, true> = {};
+  vehicles = signal<Vehicle[]>([]);
+  teams = signal<Team[]>([]);
+  products = signal<WarehouseProductOption[]>([]);
+  salesPoints = signal<SalesPoint[]>([]);
+  productStockQuantities = signal<Record<number, number>>({});
+  loading = signal(true);
+  submitting = signal(false);
+  showForm = signal(false);
+  duplicateProducts = signal(false);
+  selectedTourId = signal<number | null>(null);
+  editingTourId = signal<number | null>(null);
+  salesPointsDialog = signal<SalesPointsDialogState | null>(null);
+  loadedItemNotes = signal<Record<number, true>>({});
+  private readonly dataVersion = signal(0);
+  selectedTour = computed<TourSummary | null>(() => {
+    this.dataVersion();
+    const selectedTourId = this.selectedTourId();
+    if (!selectedTourId) {
+      return null;
+    }
+
+    return this.dataSource.data.find((tour) => this.resolveTourId(tour) === selectedTourId) ?? null;
+  });
 
   @ViewChild(MatPaginator) paginator!: MatPaginator;
   @ViewChild(MatSort) sort!: MatSort;
@@ -152,27 +162,19 @@ export class ToursComponent implements OnInit {
     return this.tourForm.controls.items.controls;
   }
 
-  get selectedTour(): TourSummary | null {
-    if (!this.selectedTourId) {
-      return null;
-    }
-
-    return this.dataSource.data.find((tour) => this.resolveTourId(tour) === this.selectedTourId) ?? null;
-  }
-
   get isEditMode(): boolean {
-    return this.editingTourId !== null;
+    return this.editingTourId() !== null;
   }
 
   openCreateTour(): void {
-    this.showForm = true;
-    this.editingTourId = null;
+    this.showForm.set(true);
+    this.editingTourId.set(null);
     this.resetTourForm();
   }
 
   closeForm(): void {
-    this.showForm = false;
-    this.editingTourId = null;
+    this.showForm.set(false);
+    this.editingTourId.set(null);
     this.resetTourForm();
   }
 
@@ -197,26 +199,34 @@ export class ToursComponent implements OnInit {
   }
 
   loadTours(): void {
-    this.loading = true;
-    forkJoin({
-      tours: this.toursService.getAll(),
-      tourItems: this.tourItemsService.getAll(),
-    })
+    this.loading.set(true);
+    this.toursService
+      .getAll()
       .pipe(
-        switchMap(({ tours, tourItems }) => {
-          const summaryRequests = (tours ?? []).map((tour) =>
-            this.loadTourSalesPoints(tour).pipe(map((salesPoints) => this.toSummary(tour, tourItems ?? [], salesPoints))),
-          );
+        switchMap((tours) => {
+          const safeTours = tours ?? [];
+          if (safeTours.length === 0) {
+            return of([] as TourSummary[]);
+          }
 
-          return summaryRequests.length ? forkJoin(summaryRequests) : of([]);
+          return this.tourItemsService.getAll().pipe(
+            switchMap((tourItems) => {
+              const summaryRequests = safeTours.map((tour) =>
+                this.loadTourSalesPoints(tour).pipe(map((salesPoints) => this.toSummary(tour, tourItems ?? [], salesPoints))),
+              );
+
+              return summaryRequests.length ? forkJoin(summaryRequests) : of([] as TourSummary[]);
+            }),
+          );
         }),
-        finalize(() => (this.loading = false)),
+        finalize(() => this.loading.set(false)),
       )
       .subscribe({
         next: (tours) => {
           this.dataSource.data = tours ?? [];
-          if (this.selectedTourId && !this.selectedTour) {
-            this.selectedTourId = null;
+          this.dataVersion.update((version) => version + 1);
+          if (this.selectedTourId() && !this.selectedTour()) {
+            this.selectedTourId.set(null);
           }
           this.dataSource.paginator = this.paginator;
           this.dataSource.sort = this.sort;
@@ -235,7 +245,7 @@ export class ToursComponent implements OnInit {
       return;
     }
 
-    if (this.duplicateProducts) {
+    if (this.duplicateProducts()) {
       this.openSnack('لا يمكن تكرار نفس المنتج داخل الجولة نفسها');
       return;
     }
@@ -253,13 +263,14 @@ export class ToursComponent implements OnInit {
       productId: Number(item.productId),
     }));
 
-    this.submitting = true;
+    this.submitting.set(true);
+    const editingTourId = this.editingTourId();
     const request$ = this.isEditMode
-      ? this.updateTourWithRelations(this.editingTourId as number, payload, itemsPayload, salesPointIds)
+      ? this.updateTourWithRelations(editingTourId as number, payload, itemsPayload, salesPointIds)
       : this.createTourWithRelations(payload, itemsPayload, salesPointIds);
 
     request$
-      .pipe(finalize(() => (this.submitting = false)))
+      .pipe(finalize(() => this.submitting.set(false)))
       .subscribe({
         next: () => {
           this.openSnack(this.isEditMode ? 'تم تعديل الجولة وعناصرها ونقاط البيع' : 'تم إنشاء الجولة وعناصرها ونقاط البيع');
@@ -273,7 +284,7 @@ export class ToursComponent implements OnInit {
   }
 
   vehicleLabel(vehicleId: number): string {
-    const vehicle = this.vehicles.find((entry) => this.resolveVehicleId(entry) === vehicleId);
+    const vehicle = this.vehicles().find((entry) => this.resolveVehicleId(entry) === vehicleId);
     if (!vehicle) {
       return `#${vehicleId}`;
     }
@@ -282,20 +293,22 @@ export class ToursComponent implements OnInit {
   }
 
   vehicleModelLabel(vehicleId: number): string {
-    const vehicle = this.vehicles.find((entry) => this.resolveVehicleId(entry) === vehicleId);
+    const vehicle = this.vehicles().find((entry) => this.resolveVehicleId(entry) === vehicleId);
     if (!vehicle) {
       return `#${vehicleId}`;
     }
 
-    return vehicle.model?.trim() || vehicle.vehicleCode;
+    return [vehicle.mark?.trim(), vehicle.type?.trim()]
+      .filter((value): value is string => !!value)
+      .join(' - ') || vehicle.vehicleCode;
   }
 
   teamLabel(teamId: number): string {
-    return this.teams.find((entry) => this.resolveTeamId(entry) === teamId)?.teamName ?? `#${teamId}`;
+    return this.teams().find((entry) => this.resolveTeamId(entry) === teamId)?.teamName ?? `#${teamId}`;
   }
 
   productLabel(productId: number): string {
-    const product = this.products.find((entry) => entry.productId === productId);
+    const product = this.products().find((entry) => entry.productId === productId);
     if (!product) {
       return `#${productId}`;
     }
@@ -304,7 +317,7 @@ export class ToursComponent implements OnInit {
   }
 
   productAvailableQuantity(productId: number): number {
-    return this.productStockQuantities[productId] ?? 0;
+    return this.productStockQuantities()[productId] ?? 0;
   }
 
   salesPointsLabel(tour: TourSummary): string {
@@ -320,8 +333,12 @@ export class ToursComponent implements OnInit {
     return this.statusOptions.find((option) => option.value === normalized)?.label ?? status ?? '-';
   }
 
+  canEditTour(tour: TourSummary): boolean {
+    return !this.isLockedTour(tour);
+  }
+
   canDeleteTour(tour: TourSummary): boolean {
-    return !this.isStartedTour(tour);
+    return !this.isLockedTour(tour);
   }
 
   toggleDetails(tour: TourSummary): void {
@@ -330,8 +347,8 @@ export class ToursComponent implements OnInit {
       return;
     }
 
-    const willOpen = this.selectedTourId !== tourId;
-    this.selectedTourId = willOpen ? tourId : null;
+    const willOpen = this.selectedTourId() !== tourId;
+    this.selectedTourId.set(willOpen ? tourId : null);
 
     if (willOpen) {
       this.loadItemNotes(tour.items);
@@ -339,7 +356,7 @@ export class ToursComponent implements OnInit {
   }
 
   hasOpenDetails(tour: TourSummary): boolean {
-    return this.resolveTourId(tour) === this.selectedTourId;
+    return this.resolveTourId(tour) === this.selectedTourId();
   }
 
   openSalesPointsDialog(tour: TourSummary): void {
@@ -349,14 +366,14 @@ export class ToursComponent implements OnInit {
       return;
     }
 
-    this.salesPointsDialog = {
+    this.salesPointsDialog.set({
       tourId,
       salesPoints: tour.salesPoints,
-    };
+    });
   }
 
   closeSalesPointsDialog(): void {
-    this.salesPointsDialog = null;
+    this.salesPointsDialog.set(null);
   }
 
   salesPointStatusLabel(isActive: boolean): string {
@@ -364,15 +381,20 @@ export class ToursComponent implements OnInit {
   }
 
   openEditTour(tour: TourSummary): void {
+    if (!this.canEditTour(tour)) {
+      this.openSnack('لا يمكن تعديل جولة حالتها بدأت أو انتهت');
+      return;
+    }
+
     const tourId = this.resolveTourId(tour);
     if (!tourId) {
       this.openSnack('تعذر تحديد معرف الجولة');
       return;
     }
 
-    this.editingTourId = tourId;
-    this.showForm = true;
-    this.selectedTourId = tourId;
+    this.editingTourId.set(tourId);
+    this.showForm.set(true);
+    this.selectedTourId.set(tourId);
     this.loadItemNotes(tour.items);
     this.setTourItemsForm(tour.items);
     this.tourForm.patchValue({
@@ -408,13 +430,13 @@ export class ToursComponent implements OnInit {
       )
       .subscribe({
         next: () => {
-          if (this.selectedTourId === tourId) {
-            this.selectedTourId = null;
+          if (this.selectedTourId() === tourId) {
+            this.selectedTourId.set(null);
           }
-          if (this.editingTourId === tourId) {
+          if (this.editingTourId() === tourId) {
             this.closeForm();
           }
-          if (this.salesPointsDialog?.tourId === tourId) {
+          if (this.salesPointsDialog()?.tourId === tourId) {
             this.closeSalesPointsDialog();
           }
           this.openSnack('تم حذف الجولة');
@@ -437,7 +459,7 @@ export class ToursComponent implements OnInit {
 
   hasLoadedItemNote(item: TourItem): boolean {
     const itemId = this.resolveTourItemId(item);
-    return itemId ? this.loadedItemNotes[itemId] === true : false;
+    return itemId ? this.loadedItemNotes()[itemId] === true : false;
   }
 
   private createTourItemGroup(): TourItemFormGroup {
@@ -513,7 +535,9 @@ export class ToursComponent implements OnInit {
   }
 
   private createTourStops(tourId: number, salesPointIds: number[]): Observable<unknown[]> {
+
     const uniqueSalesPointIds = [...new Set(salesPointIds)];
+    
     if (uniqueSalesPointIds.length === 0) {
       return of([]);
     }
@@ -558,7 +582,7 @@ export class ToursComponent implements OnInit {
   private loadReferenceData(): void {
     this.vehiclesService.getAll().subscribe({
       next: (vehicles) => {
-        this.vehicles = vehicles ?? [];
+        this.vehicles.set(vehicles ?? []);
       },
       error: () => {
         this.openSnack('فشل تحميل المركبات');
@@ -567,7 +591,7 @@ export class ToursComponent implements OnInit {
 
     this.teamsService.getAll().subscribe({
       next: (teams) => {
-        this.teams = teams ?? [];
+        this.teams.set(teams ?? []);
       },
       error: () => {
         this.openSnack('فشل تحميل الفرق');
@@ -578,7 +602,7 @@ export class ToursComponent implements OnInit {
 
     this.salesPointsService.getAll().subscribe({
       next: (salesPoints) => {
-        this.salesPoints = salesPoints ?? [];
+        this.salesPoints.set(salesPoints ?? []);
       },
       error: () => {
         this.openSnack('فشل تحميل نقاط البيع');
@@ -609,9 +633,10 @@ export class ToursComponent implements OnInit {
       )
       .subscribe({
         next: (products) => {
-          this.products = products.sort((left, right) => left.productName.localeCompare(right.productName));
-          this.productStockQuantities = Object.fromEntries(
-            this.products.map((product) => [product.productId, product.stockQuantity]),
+          const sortedProducts = products.sort((left, right) => left.productName.localeCompare(right.productName));
+          this.products.set(sortedProducts);
+          this.productStockQuantities.set(
+            Object.fromEntries(sortedProducts.map((product) => [product.productId, product.stockQuantity])),
           );
           this.updateAllItemQuantityConstraints();
         },
@@ -656,19 +681,19 @@ export class ToursComponent implements OnInit {
     return this.stocksService.getQuantityByProductId(productId).pipe(
       map((quantity) => Number(quantity) || 0),
       tap((quantity) => {
-        this.productStockQuantities = {
-          ...this.productStockQuantities,
+        this.productStockQuantities.set({
+          ...this.productStockQuantities(),
           [productId]: quantity,
-        };
+        });
 
-        this.products = this.products.map((product) =>
+        this.products.set(this.products().map((product) =>
           product.productId === productId
             ? {
                 ...product,
                 stockQuantity: quantity,
               }
             : product,
-        );
+        ));
       }),
       catchError(() => of(this.productAvailableQuantity(productId))),
     );
@@ -835,11 +860,12 @@ export class ToursComponent implements OnInit {
       .map((control) => Number(control.controls.productId.value))
       .filter((productId) => productId > 0);
 
-    this.duplicateProducts = new Set(selectedProductIds).size !== selectedProductIds.length;
+    this.duplicateProducts.set(new Set(selectedProductIds).size !== selectedProductIds.length);
   }
 
-  private isStartedTour(tour: Tour): boolean {
-    return (tour.status ?? '').trim().toLowerCase() === 'start';
+  private isLockedTour(tour: Tour): boolean {
+    const status = (tour.status ?? '').trim().toLowerCase();
+    return status === 'start' || status === 'end';
   }
 
   private initFiltering(): void {
@@ -877,7 +903,7 @@ export class ToursComponent implements OnInit {
       .map((item) => ({ item, itemId: this.resolveTourItemId(item) }))
       .filter(
         (entry): entry is { item: TourItem; itemId: number } =>
-          entry.itemId !== null && this.loadedItemNotes[entry.itemId] !== true,
+          entry.itemId !== null && this.loadedItemNotes()[entry.itemId] !== true,
       )
       .map(({ item, itemId }) =>
         this.tourItemsService.getNote(itemId).pipe(
@@ -895,11 +921,12 @@ export class ToursComponent implements OnInit {
         item.note = note;
       });
 
-      this.loadedItemNotes = {
-        ...this.loadedItemNotes,
+      this.loadedItemNotes.set({
+        ...this.loadedItemNotes(),
         ...Object.fromEntries(results.map(({ itemId }) => [itemId, true])),
-      };
+      });
       this.dataSource.data = [...this.dataSource.data];
+      this.dataVersion.update((version) => version + 1);
     });
   }
 

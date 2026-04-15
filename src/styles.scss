@@ -1,11 +1,26 @@
 ﻿@use '@angular/material' as mat;
 
+@import 'leaflet/dist/leaflet.css';
 @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&family=IBM+Plex+Mono:wght@400;600&display=swap');
 
 :root {
-  --bg-page: #eef2ff;
-  --text-main: #0f172a;
-  --text-muted: #475569;
+  --bg-page: #f4f1ea;
+  --bg-surface: rgba(255, 252, 247, 0.9);
+  --bg-elevated: #fffdf8;
+  --surface-stroke: rgba(129, 92, 54, 0.14);
+  --surface-strong: rgba(54, 39, 25, 0.88);
+  --text-main: #20160f;
+  --text-muted: #6f5c4e;
+  --text-soft: #9b8776;
+  --accent: #9a3412;
+  --accent-strong: #7c2d12;
+  --accent-soft: rgba(154, 52, 18, 0.12);
+  --success-soft: rgba(5, 150, 105, 0.12);
+  --shadow-soft: 0 20px 45px rgba(55, 33, 13, 0.08);
+  --shadow-card: 0 18px 40px rgba(49, 31, 16, 0.1);
+  --radius-xl: 28px;
+  --radius-lg: 22px;
+  --radius-md: 16px;
 }
 
 html {
@@ -26,11 +41,139 @@ body {
   color: var(--text-main);
   font-family: 'Cairo', sans-serif;
   background:
-    radial-gradient(circle at 0% 0%, rgba(34, 197, 94, 0.12), transparent 35%),
-    radial-gradient(circle at 100% 100%, rgba(14, 165, 233, 0.12), transparent 35%),
+    radial-gradient(circle at 0% 0%, rgba(217, 119, 6, 0.16), transparent 34%),
+    radial-gradient(circle at 100% 100%, rgba(5, 150, 105, 0.1), transparent 28%),
+    linear-gradient(160deg, rgba(255, 251, 245, 0.96), rgba(243, 236, 226, 0.94)),
     var(--bg-page);
 }
 
 * {
   box-sizing: border-box;
+}
+
+.mat-mdc-card,
+mat-card.mat-mdc-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--surface-stroke);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+}
+
+.mat-mdc-outlined-button,
+.mat-mdc-unelevated-button,
+.mat-mdc-raised-button {
+  --mdc-filled-button-container-shape: 999px;
+  --mdc-outlined-button-container-shape: 999px;
+  --mdc-text-button-container-shape: 999px;
+}
+
+.mat-mdc-form-field {
+  --mdc-outlined-text-field-container-shape: 18px;
+}
+
+.mat-mdc-form-field-subscript-wrapper {
+  margin-top: 2px;
+}
+
+.mat-mdc-table,
+table.mat-mdc-table {
+  background: transparent;
+}
+
+.mat-mdc-header-row {
+  background: rgba(255, 248, 240, 0.82);
+}
+
+.mat-mdc-row:hover {
+  background: rgba(154, 52, 18, 0.04);
+}
+
+.tracking-car-marker {
+  background: transparent;
+  border: 0;
+}
+
+.tracking-car-marker__pin {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 16px 16px 16px 6px;
+  background: linear-gradient(145deg, #0f766e, #14b8a6);
+  border: 2px solid rgba(255, 255, 255, 0.95);
+  box-shadow: 0 12px 24px rgba(15, 118, 110, 0.28);
+  transform: rotate(-8deg);
+}
+
+.tracking-car-marker__pin::after {
+  content: '';
+  position: absolute;
+  left: 8px;
+  bottom: -7px;
+  width: 14px;
+  height: 14px;
+  background: #0f766e;
+  border-radius: 0 0 4px;
+  transform: rotate(45deg);
+  z-index: -1;
+}
+
+.tracking-car-marker__icon {
+  width: 25px;
+  height: 25px;
+  color: #fff;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transform: rotate(8deg);
+}
+
+.tracking-plate-tooltip {
+  background: #ffffff;
+  border: 1px solid #99f6e4;
+  border-radius: 999px;
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.12);
+  color: #0f172a;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  padding: 6px 10px;
+}
+
+.tracking-plate-tooltip::before {
+  border-top-color: #ffffff;
+}
+
+.tracking-popup {
+  min-width: 180px;
+  display: grid;
+  gap: 10px;
+}
+
+.tracking-popup strong {
+  color: #0f172a;
+  font-size: 14px;
+}
+
+.tracking-popup__row {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  color: #475569;
+  font-size: 13px;
+}
+
+.tracking-popup__row b {
+  color: #0f172a;
+}
+
+.tracking-popup__time {
+  padding-top: 6px;
+  border-top: 1px solid #e2e8f0;
+  color: #64748b;
+  font-size: 12px;
 }

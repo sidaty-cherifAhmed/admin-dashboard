@@ -5,6 +5,7 @@ import { environment } from '../../../environments/environment';
 import { Vehicle, VehiclePayload } from '../models/vehicle.model';
 
 @Injectable({ providedIn: 'root' })
+
 export class VehiclesService {
   private api = `${environment.apiUrl}/vehicles`;
 
@@ -29,4 +30,6 @@ export class VehiclesService {
   delete(id: number): Observable<void> {
     return this.http.delete<void>(`${this.api}/${id}`);
   }
+
+  
 }

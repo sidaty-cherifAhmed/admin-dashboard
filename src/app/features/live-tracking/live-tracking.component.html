@@ -1,0 +1,76 @@
+<mat-card class="page tracking-page" [attr.dir]="i18n.direction()">
+  <div class="page-header">
+    <div>
+      <h2>{{ 'liveTracking.title' | t }}</h2>
+      <p>{{ 'liveTracking.description' | t }}</p>
+    </div>
+    <div class="header-actions">
+      <button mat-stroked-button type="button" (click)="reloadTours()" [disabled]="toursLoading()">
+        <mat-icon>refresh</mat-icon>
+        {{ 'liveTracking.refreshTours' | t }}
+      </button>
+    </div>
+  </div>
+
+  <div class="loading" *ngIf="toursLoading() && showToursLoading()">{{ 'liveTracking.loadingTours' | t }}</div>
+
+  <mat-card class="state-card" *ngIf="!toursLoading() && toursError()">
+    <div class="state-content">
+      <mat-icon>error_outline</mat-icon>
+      <div>
+        <strong>{{ 'liveTracking.loadErrorTitle' | t }}</strong>
+        <p>{{ 'liveTracking.loadErrorBody' | t }}</p>
+      </div>
+    </div>
+  </mat-card>
+
+  <mat-card class="state-card" *ngIf="!toursLoading() && !toursError() && startedTours().length === 0">
+    <div class="state-content">
+      <mat-icon>route</mat-icon>
+      <div>
+        <strong>{{ 'liveTracking.noToursTitle' | t }}</strong>
+      </div>
+    </div>
+  </mat-card>
+
+  <div class="tracking-layout" *ngIf="!toursLoading() && !toursError() && startedTours().length > 0">
+    <mat-card class="control-card">
+      <mat-form-field appearance="outline">
+        <mat-label>{{ 'liveTracking.chooseTour' | t }}</mat-label>
+        <mat-select [formControl]="filterForm.controls.tourId">
+          <mat-option *ngFor="let tour of startedTours(); trackBy: trackByTour" [value]="tour.tourId">{{ tourLabel(tour) }}</mat-option>
+        </mat-select>
+      </mat-form-field>
+
+      <div class="tour-summary" *ngIf="selectedTour() as tour">
+        <div class="summary-row"><span>{{ 'liveTracking.tourNumber' | t }}</span><strong>#{{ tour.tourId }}</strong></div>
+        <div class="summary-row"><span>{{ 'common.vehicle' | t }}</span><strong>{{ vehicleLabel(tour.vehicleId) }}</strong></div>
+        <div class="summary-row"><span>{{ 'common.status' | t }}</span><strong>{{ statusLabel(tour.status) }}</strong></div>
+        <div class="summary-row"><span>{{ 'liveTracking.lastUpdate' | t }}</span><strong>{{ formatLogTime(latestLog()?.logTime) }}</strong></div>
+      </div>
+
+      <div class="location-meta" *ngIf="selectedTour()">
+        <div class="meta-pill loading-pill" *ngIf="locationLoading() || locationRefreshing()">
+          <mat-spinner diameter="16"></mat-spinner>
+          <span>{{ locationLoading() ? ('liveTracking.loadingLocation' | t) : ('liveTracking.refreshingLocation' | t) }}</span>
+        </div>
+        <div class="meta-pill error-pill" *ngIf="locationError()"><mat-icon>wifi_off</mat-icon><span>{{ 'liveTracking.locationRefreshFailed' | t }}</span></div>
+        <div class="meta-pill empty-pill" *ngIf="locationUnavailable()"><mat-icon>location_off</mat-icon><span>{{ 'liveTracking.locationUnavailable' | t }}</span></div>
+      </div>
+    </mat-card>
+
+    <mat-card class="map-card">
+      <div class="map-shell">
+        <div #mapContainer class="map-container" [class.dimmed]="locationLoading() && !hasMapData()"></div>
+        <div class="map-overlay" *ngIf="locationLoading() && !hasMapData()"><mat-spinner diameter="40"></mat-spinner><p>{{ 'liveTracking.loadingGps' | t }}</p></div>
+        <div class="map-overlay" *ngIf="!locationLoading() && locationUnavailable()"><mat-icon>location_off</mat-icon><p>{{ 'liveTracking.locationUnavailable' | t }}</p></div>
+        <div class="map-banner" *ngIf="locationError() && hasMapData()">{{ 'liveTracking.mapError' | t }}</div>
+      </div>
+
+      <div class="coordinates" *ngIf="latestLog() as log">
+        <span>Latitude: {{ log.latitude }}</span>
+        <span>Longitude: {{ log.longitude }}</span>
+      </div>
+    </mat-card>
+  </div>
+</mat-card>
