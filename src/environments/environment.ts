@@ -1,5 +1,5 @@
 export const environment = {
-  production: false,
+  production: true,
   // apiUrl: '/api',
   // apiUrl: 'http://localhost:8080/api',
    apiUrl: 'https://nonfervently-unlexicographical-amy.ngrok-free.dev/api',
