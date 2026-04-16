@@ -2,6 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { map, tap } from 'rxjs/operators';
+import { environment } from '../../../environments/environment';
 
 interface LoginPayload {
   email: string;
@@ -20,7 +21,7 @@ export class AuthService {
   private readonly tokenKey = 'auth_token';
   private readonly sessionKey = 'auth_session';
 
-  private readonly authApi = '/api/auth/login';
+  private readonly authApi = `${environment.apiUrl}/auth/login`;
 
   login(payload: LoginPayload): Observable<void> {
         return this.http.post<unknown>(this.authApi, payload).pipe(
