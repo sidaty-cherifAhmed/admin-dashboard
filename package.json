@@ -3,10 +3,13 @@
   "version": "0.0.0",
   "scripts": {
     "ng": "ng",
-    "start": "ng serve --proxy-config proxy.conf.json",
-    "build": "ng build",
+    "start": "node server.js",
+    "build": "ng build --configuration production",
     "watch": "ng build --watch --configuration development",
     "test": "ng test"
+  },
+  "engine":{
+    "node":">=18.0.0"
   },
   "prettier": {
     "printWidth": 100,
@@ -32,6 +35,7 @@
     "@angular/platform-browser": "^21.1.0",
     "@angular/router": "^21.1.0",
     "@types/leaflet": "^1.9.21",
+    "express": "^5.2.1",
     "leaflet": "^1.9.4",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0"
