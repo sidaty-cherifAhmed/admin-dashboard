@@ -30,6 +30,8 @@ app.use('/api', async (req, res) => {
       }
     }
 
+    forwardHeaders.set('ngrok-skip-browser-warning', 'true');
+
     const canHaveBody = !['GET', 'HEAD'].includes(req.method);
     const requestBody =
       canHaveBody && req.body && Object.keys(req.body).length > 0
