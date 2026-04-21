@@ -88,6 +88,7 @@ interface WarehouseProductOption {
   styleUrl: './tours.component.scss',
 })
 export class ToursComponent implements OnInit {
+
   private readonly toursService = inject(ToursService);
   private readonly tourItemsService = inject(TourItemsService);
   private readonly tourStopsService = inject(TourStopsService);
@@ -394,7 +395,7 @@ export class ToursComponent implements OnInit {
 
     this.editingTourId.set(tourId);
     this.showForm.set(true);
-    this.selectedTourId.set(tourId);
+    // this.selectedTourId.set(tourId);
     this.loadItemNotes(tour.items);
     this.setTourItemsForm(tour.items);
     this.tourForm.patchValue({
