@@ -1,15 +1,14 @@
 import { DOCUMENT } from '@angular/common';
 import { Injectable, computed, effect, inject, signal } from '@angular/core';
 
-export type AppLanguage = 'ar' | 'en' | 'fr';
+export type AppLanguage = 'ar' | 'fr';
 interface TranslationTree {
   [key: string]: string | TranslationTree;
 }
 
 const STORAGE_KEY = 'admin-dashboard-language';
 
-const translations: Record<AppLanguage, TranslationTree> = {
-  en: {
+const baseTranslations: TranslationTree = {
     common: {
       appName: 'Admin Dashboard',
       controlPanel: 'Control Panel',
@@ -103,13 +102,12 @@ const translations: Record<AppLanguage, TranslationTree> = {
       loading: 'Loading dashboard statistics...',
       loadError: 'Failed to load dashboard statistics',
     },
-  },
-  fr: {},
-  ar: {},
 };
 
-translations.fr = JSON.parse(JSON.stringify(translations.en));
-translations.ar = JSON.parse(JSON.stringify(translations.en));
+const translations: Record<AppLanguage, TranslationTree> = {
+  fr: JSON.parse(JSON.stringify(baseTranslations)),
+  ar: JSON.parse(JSON.stringify(baseTranslations)),
+};
 
 Object.assign(translations.fr['common'] as object, {
   appName: 'Tableau de bord',
@@ -262,34 +260,6 @@ Object.assign(translations.ar['layout'] as object, {
 });
 
 const pageOverrides: Partial<Record<AppLanguage, Record<string, Record<string, string>>>> = {
-  en: {
-    teamMembers: {
-      title: 'Team Members',
-      description: 'Assign users to teams, edit the link, or remove it.',
-      searchPlaceholder: 'Search by user or team',
-      new: 'New link',
-      createTitle: 'Add users to a team',
-      editTitle: 'Edit link',
-      multipleUsersHint: 'You can select more than one user',
-      userRequired: 'User is required',
-      teamRequired: 'Team is required',
-      createSubmit: 'Save link',
-      empty: 'No links available',
-      loading: 'Loading team members...',
-      loadError: 'Failed to load team members',
-      loadUsersError: 'Failed to load users',
-      loadTeamsError: 'Failed to load teams',
-      createSuccess: 'Link created',
-      updateSuccess: 'Link updated',
-      createError: 'Failed to create link',
-      updateError: 'Failed to update link',
-      duplicateMember: 'This user is already assigned to this team',
-      deleteConfirm: 'Delete this link?',
-      deleteSuccess: 'Link deleted',
-      deleteError: 'Failed to delete link',
-      idPrefix: 'ID',
-    },
-  },
   fr: {
     users: {
       title: 'Gestion des utilisateurs',
@@ -925,12 +895,78 @@ for (const language of Object.keys(pageOverrides) as AppLanguage[]) {
   }
 }
 
-Object.assign((translations.en['vehicles'] ??= {}), {
-  searchPlaceholder: 'Search by code, mark, type, year, plate, capacity, or mileage',
-  mark: 'Mark',
-  type: 'Type',
-  year: 'Year',
-  mileage: 'Mileage',
+Object.assign((translations.fr['dashboard'] ??= {}), {
+  title: 'Tableau de bord',
+  description: 'Résumé rapide des utilisateurs, véhicules, points de vente et équipes.',
+  usersCount: 'Nombre d’utilisateurs',
+  vehiclesCount: 'Nombre de véhicules',
+  salesPointsCount: 'Nombre de points de vente',
+  teamsCount: 'Nombre d’équipes',
+  refresh: 'Actualiser',
+  loading: 'Chargement des statistiques du tableau de bord...',
+  loadError: 'Échec du chargement des statistiques du tableau de bord',
+  overviewTitle: 'Vue d’ensemble',
+  overviewDescription: 'Totaux actuels des principales entités opérationnelles.',
+  salesTitle: 'Statistiques des ventes',
+  salesDescription: 'Performance du chiffre d’affaires et des quantités par zone et point de vente.',
+  salesLoading: 'Chargement des statistiques de vente...',
+  salesLoadError: 'Échec du chargement des statistiques de vente',
+  noSalesData: 'Aucune donnée de vente disponible',
+  topSalesZone: 'Zone la plus performante',
+  topPointOfSale: 'Point de vente le plus performant',
+  totalRevenue: 'Chiffre d’affaires total',
+  totalUnitsSold: 'Quantité totale vendue',
+  fromAllPoints: 'Calculé à partir de tous les points de vente',
+  awaitingSalesData: 'En attente des données de vente',
+  salesByZone: 'Ventes par zone',
+  topPointsOfSale: 'Meilleurs points de vente',
+  salesByPointTable: 'Ventes par point de vente',
+  salesByPointTableDescription: 'Totaux des ventes triables pour chaque point de vente.',
+  pointOfSaleName: 'Point de vente',
+  totalQuantity: 'Quantité totale',
+  totalAmount: 'Montant total',
+  revenueMetric: 'Chiffre d’affaires',
+  quantityMetric: 'Quantité',
+  metricShown: 'Indicateur : {metric}',
+  topFive: 'Top 5',
+  topTen: 'Top 10',
+});
+
+Object.assign((translations.ar['dashboard'] ??= {}), {
+  title: 'لوحة التحكم',
+  description: 'ملخص سريع للمستخدمين والمركبات ونقاط البيع والفرق.',
+  usersCount: 'عدد المستخدمين',
+  vehiclesCount: 'عدد المركبات',
+  salesPointsCount: 'عدد نقاط البيع',
+  teamsCount: 'عدد الفرق',
+  refresh: 'تحديث',
+  loading: 'جارٍ تحميل إحصائيات لوحة التحكم...',
+  loadError: 'فشل تحميل إحصائيات لوحة التحكم',
+  overviewTitle: 'نظرة عامة',
+  overviewDescription: 'الإجماليات الحالية للكيانات التشغيلية الرئيسية.',
+  salesTitle: 'إحصائيات المبيعات',
+  salesDescription: 'أداء الإيرادات والكميات عبر المناطق ونقاط البيع.',
+  salesLoading: 'جارٍ تحميل إحصائيات المبيعات...',
+  salesLoadError: 'فشل تحميل إحصائيات المبيعات',
+  noSalesData: 'لا توجد بيانات مبيعات متاحة',
+  topSalesZone: 'أفضل منطقة مبيعاً',
+  topPointOfSale: 'أفضل نقطة بيع',
+  totalRevenue: 'إجمالي الإيرادات',
+  totalUnitsSold: 'إجمالي الوحدات المباعة',
+  fromAllPoints: 'محسوب من جميع نقاط البيع',
+  awaitingSalesData: 'بانتظار بيانات المبيعات',
+  salesByZone: 'المبيعات حسب المنطقة',
+  topPointsOfSale: 'أفضل نقاط البيع',
+  salesByPointTable: 'المبيعات حسب نقطة البيع',
+  salesByPointTableDescription: 'إجماليات مبيعات قابلة للترتيب لكل نقطة بيع.',
+  pointOfSaleName: 'نقطة البيع',
+  totalQuantity: 'إجمالي الكمية',
+  totalAmount: 'إجمالي المبلغ',
+  revenueMetric: 'الإيرادات',
+  quantityMetric: 'الكمية',
+  metricShown: 'المؤشر: {metric}',
+  topFive: 'أفضل 5',
+  topTen: 'أفضل 10',
 });
 
 Object.assign((translations.fr['vehicles'] ??= {}), {
@@ -962,8 +998,6 @@ export class I18nService {
         return 'fr-FR';
       case 'ar':
         return 'ar';
-      default:
-        return 'en-US';
     }
   });
 
@@ -986,7 +1020,7 @@ export class I18nService {
   }
 
   t(key: string, params?: Record<string, string | number>): string {
-    const value = this.lookup(this.language(), key) ?? this.lookup('en', key) ?? key;
+    const value = this.lookup(this.language(), key) ?? this.lookup('fr', key) ?? key;
     return params
       ? Object.entries(params).reduce(
           (text, [param, replacement]) => text.replaceAll(`{${param}}`, String(replacement)),
@@ -997,7 +1031,7 @@ export class I18nService {
 
   private resolveInitialLanguage(): AppLanguage {
     const stored = localStorage.getItem(STORAGE_KEY);
-    return stored === 'ar' || stored === 'fr' || stored === 'en' ? stored : 'ar';
+    return stored === 'ar' || stored === 'fr' ? stored : 'ar';
   }
 
   private lookup(language: AppLanguage, key: string): string | null {

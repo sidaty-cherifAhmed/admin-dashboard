@@ -8,79 +8,263 @@
   box-shadow: var(--shadow-card);
 }
 
-.page-header {
+.page-header,
+.section-header,
+.panel-head,
+.sales-header {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
   flex-wrap: wrap;
-
-  h2 {
-    margin: 0;
-    color: var(--text-main);
-    font-size: 26px;
-    font-weight: 800;
-  }
-
-  p {
-    margin: 6px 0 0;
-    color: var(--text-muted);
-    font-weight: 600;
-  }
-
-  button {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-  }
 }
 
-.stats-grid {
+.page-header h2,
+.section-header h3,
+.sales-header h3,
+.panel-head h4 {
+  margin: 0;
+  color: var(--text-main);
+  font-weight: 800;
+}
+
+.page-header h2 {
+  font-size: 26px;
+}
+
+.section-header h3,
+.sales-header h3 {
+  font-size: 20px;
+}
+
+.panel-head h4 {
+  font-size: 17px;
+}
+
+.page-header p,
+.section-header p,
+.sales-header p,
+.panel-head p {
+  margin: 4px 0 0;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.page-header button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dashboard-section {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 14px;
+}
+
+.stats-grid,
+.kpi-grid,
+.chart-grid {
+  display: grid;
+  gap: 14px;
+}
+
+.stats-grid,
+.kpi-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.chart-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.stat-card,
+.panel-card,
+.kpi-card {
+  border: 1px solid #dde5ee;
+  border-radius: 16px;
+  background: #ffffff;
+  box-shadow: 0 10px 26px rgba(49, 31, 16, 0.06);
 }
 
 .stat-card {
   display: flex;
   align-items: center;
   gap: 14px;
-  min-height: 132px;
-  padding: 20px;
-  border: 1px solid #e2e8f0;
-  border-radius: 18px;
-  background: #ffffff;
-  box-shadow: 0 14px 30px rgba(49, 31, 16, 0.08);
+  min-height: 116px;
+  padding: 18px;
+}
+
+.panel-card {
+  padding: 16px 16px 14px;
 }
 
 .icon-wrap {
-  width: 54px;
-  height: 54px;
-  flex: 0 0 54px;
+  width: 46px;
+  height: 46px;
+  flex: 0 0 46px;
   display: grid;
   place-items: center;
-  border-radius: 16px;
+  border-radius: 14px;
 
   mat-icon {
-    width: 28px;
-    height: 28px;
-    font-size: 28px;
+    width: 24px;
+    height: 24px;
+    font-size: 24px;
   }
+}
+
+.stat-value,
+.kpi-value,
+.mono-cell {
+  font-family: 'IBM Plex Mono', monospace;
 }
 
 .stat-value {
   color: #0f172a;
-  font-family: 'IBM Plex Mono', monospace;
-  font-size: 34px;
+  font-size: 32px;
   font-weight: 700;
-  line-height: 1;
+  line-height: 1.05;
 }
 
 .stat-label {
-  margin-top: 8px;
+  margin-top: 6px;
   color: #64748b;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 800;
+}
+
+.kpi-card {
+  display: grid;
+  gap: 8px;
+  min-height: 122px;
+  padding: 14px 16px;
+}
+
+.kpi-card__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.kpi-label {
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.kpi-icon {
+  width: 18px;
+  height: 18px;
+  color: #94a3b8;
+  font-size: 18px;
+}
+
+.kpi-value {
+  color: #0f172a;
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1.15;
+  word-break: break-word;
+}
+
+.kpi-subtitle {
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.chart-panel {
+  display: grid;
+  gap: 10px;
+}
+
+.chart-canvas {
+  position: relative;
+}
+
+.chart-canvas canvas {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.compact-toggle {
+  ::ng-deep .mat-button-toggle-appearance-standard .mat-pseudo-checkbox {
+    display: none;
+  }
+
+  ::ng-deep .mat-button-toggle-group-appearance-standard,
+  &.mat-button-toggle-group {
+    border-radius: 10px;
+    border-color: #d5dde7;
+    background: #f8fafc;
+  }
+
+  ::ng-deep .mat-button-toggle-button {
+    height: 34px;
+  }
+
+  ::ng-deep .mat-button-toggle-label-content {
+    line-height: 34px;
+    padding: 0 12px;
+    font-size: 12px;
+    font-weight: 700;
+  }
+
+  ::ng-deep .mat-button-toggle-checked {
+    color: #ffffff;
+    background: #0f766e;
+  }
+}
+
+.compact-toggle--secondary {
+  ::ng-deep .mat-button-toggle-checked {
+    background: #1d4ed8;
+  }
+}
+
+.table-wrap {
+  overflow-x: auto;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+}
+
+.analytics-table {
+  width: 100%;
+  min-width: 720px;
+  background: #ffffff;
+  table-layout: fixed;
+}
+
+.analytics-table th {
+  background: #f8fafc;
+  color: #0f172a;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.analytics-table td {
+  color: #0f172a;
+  vertical-align: middle;
+}
+
+.analytics-table th,
+.analytics-table td {
+  height: 56px;
+  padding-inline: 16px;
+  border-bottom-color: rgba(226, 232, 240, 0.88);
+}
+
+.name-cell {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.align-end {
+  text-align: end;
 }
 
 .tone-users .icon-wrap {
@@ -103,13 +287,23 @@
   background: #ede9fe;
 }
 
+.panel-empty {
+  min-height: 240px;
+  display: grid;
+  place-items: center;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
 .state {
-  min-height: 132px;
+  min-height: 120px;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 10px;
-  border-radius: 18px;
+  padding: 18px;
+  border-radius: 16px;
   font-weight: 800;
 }
 
@@ -125,23 +319,46 @@
   background: #fef2f2;
 }
 
+.empty {
+  border: 1px dashed #cbd5e1;
+  color: #475569;
+  background: #f8fafc;
+}
+
 @media (max-width: 1180px) {
-  .stats-grid {
+  .stats-grid,
+  .kpi-grid,
+  .chart-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
-@media (max-width: 640px) {
+@media (max-width: 760px) {
   .summary-page {
     padding: 16px;
     border-radius: 20px;
   }
 
-  .stats-grid {
+  .stats-grid,
+  .chart-grid {
     grid-template-columns: 1fr;
   }
 
-  .stat-card {
-    min-height: 112px;
+  .kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .panel-card {
+    padding: 14px;
+  }
+}
+
+@media (max-width: 560px) {
+  .kpi-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .kpi-value {
+    font-size: 22px;
   }
 }

@@ -1,37 +1,216 @@
 <section class="summary-page" [attr.dir]="i18n.direction()">
-
   <div class="page-header">
     <div>
       <h2>{{ 'dashboard.title' | t }}</h2>
       <p>{{ 'dashboard.description' | t }}</p>
     </div>
 
-    <button mat-stroked-button type="button" (click)="loadSummary()" [disabled]="loading()">
+    <button
+      mat-stroked-button
+      type="button"
+      (click)="refreshDashboard()"
+      [disabled]="loading() || salesLoading()"
+    >
       <mat-icon>refresh</mat-icon>
       <span>{{ 'dashboard.refresh' | t }}</span>
     </button>
   </div>
 
-  <div class="state loading" *ngIf="loading()">
-    <mat-icon>hourglass_top</mat-icon>
-    <span>{{ 'dashboard.loading' | t }}</span>
-  </div>
-
-  <div class="state error" *ngIf="!loading() && loadFailed()">
-    <mat-icon>error_outline</mat-icon>
-    <span>{{ 'dashboard.loadError' | t }}</span>
-  </div>
-
-  <div class="stats-grid" *ngIf="!loading() && !loadFailed()">
-    <article class="stat-card" *ngFor="let card of cards" [ngClass]="'tone-' + card.tone">
-      <div class="icon-wrap">
-        <mat-icon>{{ card.icon }}</mat-icon>
-      </div>
-
+  <section class="dashboard-section">
+    <div class="section-header">
       <div>
-        <div class="stat-value">{{ valueFor(card) | number }}</div>
-        <div class="stat-label">{{ card.labelKey | t }}</div>
+        <h3>{{ 'dashboard.overviewTitle' | t }}</h3>
+        <p>{{ 'dashboard.overviewDescription' | t }}</p>
       </div>
-    </article>
-  </div>
+    </div>
+
+    <div class="state loading" *ngIf="loading()">
+      <mat-icon>hourglass_top</mat-icon>
+      <span>{{ 'dashboard.loading' | t }}</span>
+    </div>
+
+    <div class="state error" *ngIf="!loading() && loadFailed()">
+      <mat-icon>error_outline</mat-icon>
+      <span>{{ 'dashboard.loadError' | t }}</span>
+    </div>
+
+    <div class="stats-grid" *ngIf="!loading() && !loadFailed()">
+      <article class="stat-card" *ngFor="let card of cards" [ngClass]="'tone-' + card.tone">
+        <div class="icon-wrap">
+          <mat-icon>{{ card.icon }}</mat-icon>
+        </div>
+
+        <div>
+          <div class="stat-value">{{ valueFor(card) | number }}</div>
+          <div class="stat-label">{{ card.labelKey | t }}</div>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <section class="dashboard-section sales-section">
+    <div class="sales-header">
+      <div>
+        <h3>{{ 'dashboard.salesTitle' | t }}</h3>
+        <p>{{ 'dashboard.salesDescription' | t }}</p>
+      </div>
+
+      <mat-button-toggle-group
+        class="compact-toggle"
+        [value]="selectedMetric()"
+        (valueChange)="setMetric($event)"
+        *ngIf="!salesLoading() && !salesLoadFailed() && hasSalesData()"
+      >
+        <mat-button-toggle value="totalAmount">
+          {{ 'dashboard.revenueMetric' | t }}
+        </mat-button-toggle>
+        <mat-button-toggle value="totalQuantity">
+          {{ 'dashboard.quantityMetric' | t }}
+        </mat-button-toggle>
+      </mat-button-toggle-group>
+    </div>
+
+    <div class="state loading" *ngIf="salesLoading()">
+      <mat-icon>hourglass_top</mat-icon>
+      <span>{{ 'dashboard.salesLoading' | t }}</span>
+    </div>
+
+    <div class="state error" *ngIf="!salesLoading() && salesLoadFailed()">
+      <mat-icon>error_outline</mat-icon>
+      <span>{{ 'dashboard.salesLoadError' | t }}</span>
+    </div>
+
+    <div class="state empty" *ngIf="!salesLoading() && !salesLoadFailed() && !hasSalesData()">
+      <mat-icon>leaderboard</mat-icon>
+      <span>{{ 'dashboard.noSalesData' | t }}</span>
+    </div>
+
+    <ng-container *ngIf="!salesLoading() && !salesLoadFailed() && hasSalesData()">
+      <div class="kpi-grid">
+        <article class="kpi-card" *ngFor="let card of salesKpis()">
+          <div class="kpi-card__top">
+            <div class="kpi-label">{{ card.labelKey | t }}</div>
+            <mat-icon class="kpi-icon">{{ card.icon }}</mat-icon>
+          </div>
+          <div class="kpi-value">{{ card.value }}</div>
+          <div class="kpi-subtitle">{{ card.subtitle }}</div>
+        </article>
+      </div>
+
+      <div class="chart-grid analytics-grid">
+        <article class="panel-card chart-panel">
+          <div class="panel-head chart-head">
+            <div>
+              <h4>{{ 'dashboard.salesByZone' | t }}</h4>
+              <p>{{ 'dashboard.metricShown' | t:{ metric: metricLabel() } }}</p>
+            </div>
+          </div>
+
+          <div class="chart-shell" *ngIf="zoneChartData().labels?.length; else emptyZoneChart">
+            <div class="chart-canvas" [style.height.px]="zoneChartHeight()">
+              <canvas
+                #zoneChart
+                baseChart
+                [type]="'bar'"
+                [data]="zoneChartData()"
+                [options]="zoneChartOptions()"
+                [legend]="chartLegend"
+              ></canvas>
+            </div>
+          </div>
+        </article>
+
+        <article class="panel-card chart-panel">
+          <div class="panel-head chart-head">
+            <div>
+              <h4>{{ 'dashboard.topPointsOfSale' | t }}</h4>
+              <p>{{ 'dashboard.metricShown' | t:{ metric: metricLabel() } }}</p>
+            </div>
+
+            <mat-button-toggle-group
+              class="compact-toggle compact-toggle--secondary"
+              [value]="topPointLimit()"
+              (valueChange)="setTopPointLimit($event)"
+            >
+              <mat-button-toggle [value]="5">{{ 'dashboard.topFive' | t }}</mat-button-toggle>
+              <mat-button-toggle [value]="10">{{ 'dashboard.topTen' | t }}</mat-button-toggle>
+            </mat-button-toggle-group>
+          </div>
+
+          <div class="chart-shell" *ngIf="topPointChartData().labels?.length; else emptyPointsChart">
+            <div class="chart-canvas" [style.height.px]="topPointChartHeight()">
+              <canvas
+                #topPointChart
+                baseChart
+                [type]="'bar'"
+                [data]="topPointChartData()"
+                [options]="topPointChartOptions()"
+                [legend]="chartLegend"
+              ></canvas>
+            </div>
+          </div>
+        </article>
+      </div>
+
+      <article class="panel-card table-panel">
+        <div class="panel-head">
+          <div>
+            <h4>{{ 'dashboard.salesByPointTable' | t }}</h4>
+            <p>{{ 'dashboard.salesByPointTableDescription' | t }}</p>
+          </div>
+        </div>
+
+        <div class="table-wrap" *ngIf="dataSource.data.length > 0; else emptyTable">
+          <table mat-table [dataSource]="dataSource" matSort class="analytics-table">
+            <ng-container matColumnDef="salesPointName">
+              <th mat-header-cell *matHeaderCellDef mat-sort-header>
+                {{ 'dashboard.pointOfSaleName' | t }}
+              </th>
+              <td mat-cell *matCellDef="let point" class="name-cell" [title]="point.salesPointName">
+                {{ point.salesPointName }}
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="zone">
+              <th mat-header-cell *matHeaderCellDef mat-sort-header>{{ 'common.zone' | t }}</th>
+              <td mat-cell *matCellDef="let point">{{ point.zone }}</td>
+            </ng-container>
+
+            <ng-container matColumnDef="totalQuantity">
+              <th mat-header-cell *matHeaderCellDef mat-sort-header class="align-end">
+                {{ 'dashboard.totalQuantity' | t }}
+              </th>
+              <td mat-cell *matCellDef="let point" class="align-end mono-cell">
+                {{ formatNumber(point.totalQuantity) }}
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="totalAmount">
+              <th mat-header-cell *matHeaderCellDef mat-sort-header class="align-end">
+                {{ 'dashboard.totalAmount' | t }}
+              </th>
+              <td mat-cell *matCellDef="let point" class="align-end mono-cell">
+                {{ formatCurrency(point.totalAmount) }}
+              </td>
+            </ng-container>
+
+            <tr mat-header-row *matHeaderRowDef="salesTableColumns"></tr>
+            <tr mat-row *matRowDef="let row; columns: salesTableColumns"></tr>
+          </table>
+        </div>
+      </article>
+    </ng-container>
+  </section>
 </section>
+
+<ng-template #emptyZoneChart>
+  <div class="panel-empty">{{ 'dashboard.noSalesData' | t }}</div>
+</ng-template>
+
+<ng-template #emptyPointsChart>
+  <div class="panel-empty">{{ 'dashboard.noSalesData' | t }}</div>
+</ng-template>
+
+<ng-template #emptyTable>
+  <div class="panel-empty">{{ 'dashboard.noSalesData' | t }}</div>
+</ng-template>

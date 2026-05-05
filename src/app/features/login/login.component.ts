@@ -42,7 +42,7 @@ export class LoginComponent {
   private readonly cdr = inject(ChangeDetectorRef);
 
   readonly i18n = inject(I18nService);
-  readonly languages: AppLanguage[] = ['en', 'fr', 'ar'];
+  readonly languages: AppLanguage[] = ['fr', 'ar'];
 
   readonly form = this.fb.nonNullable.group({
     email: ['', [Validators.required, Validators.email]],

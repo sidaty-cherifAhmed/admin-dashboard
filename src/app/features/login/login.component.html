@@ -8,7 +8,7 @@
       [class.active]="i18n.language() === language"
       (click)="setLanguage(language)"
     >
-      {{ ('common.' + (language === 'en' ? 'english' : language === 'fr' ? 'french' : 'arabic')) | t }}
+      {{ ('common.' + (language === 'fr' ? 'french' : 'arabic')) | t }}
     </button>
   </div>
 

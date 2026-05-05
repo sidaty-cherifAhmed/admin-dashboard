@@ -18,7 +18,7 @@ import { TranslatePipe } from '../../shared/pipes/translate.pipe';
 export class AdminLayoutComponent {
   
   readonly i18n = inject(I18nService);
-  readonly languages: AppLanguage[] = ['en', 'fr', 'ar'];
+  readonly languages: AppLanguage[] = ['fr', 'ar'];
   
   constructor(
     private readonly authService: AuthService,

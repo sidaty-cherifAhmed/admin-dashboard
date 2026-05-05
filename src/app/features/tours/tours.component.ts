@@ -212,11 +212,13 @@ export class ToursComponent implements OnInit {
 
           return this.tourItemsService.getAll().pipe(
             switchMap((tourItems) => {
+
               const summaryRequests = safeTours.map((tour) =>
                 this.loadTourSalesPoints(tour).pipe(map((salesPoints) => this.toSummary(tour, tourItems ?? [], salesPoints))),
               );
 
-              return summaryRequests.length ? forkJoin(summaryRequests) : of([] as TourSummary[]);
+            return summaryRequests.length ? forkJoin(summaryRequests) : of([] as TourSummary[]);
+
             }),
           );
         }),
